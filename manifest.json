@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Chess.com analysis at lichess",
+  "version": "1.0",
+
+  "description": "Analysing chess.com games at lichess.org for free.",
+
+  "icons": {
+    "512": "icons/icon-512.png"
+  },
+
+  "permissions": ["<all_urls>", "tabs", "activeTab"],
+
+  "background": {
+    "scripts": ["background.js"]
+  },
+
+  "page_action": {
+    "browser_style": true,
+    "default_icon": {
+      "512": "icons/page-action-icon-512.png"
+    },
+    "default_title": "Analyse game on lichess",
+    "show_matches": ["https://www.chess.com/game/live/*"]
+  }
+}
