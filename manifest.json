@@ -9,7 +9,7 @@
     "512": "icons/icon-512.png"
   },
 
-  "permissions": ["<all_urls>", "tabs", "activeTab"],
+  "permissions": ["<all_urls>", "tabs"],
 
   "background": {
     "scripts": ["background.js"]
