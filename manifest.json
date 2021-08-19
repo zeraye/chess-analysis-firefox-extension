@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Chess.com analysis at lichess",
-  "version": "1.0",
+  "version": "1.1",
 
   "description": "Analysing chess.com games at lichess.org for free.",
 
