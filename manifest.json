@@ -9,7 +9,7 @@
     "512": "icons/icon-512.png"
   },
 
-  "permissions": ["<all_urls>", "tabs"],
+  "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
 
   "background": {
     "scripts": ["background.js"]
