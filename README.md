@@ -4,7 +4,7 @@ Analysing chess.com games at lichess.org for free.
 
 ## Add-on
 
-Extension can be installed [here](https://addons.mozilla.org/en-US/firefox/addon/chess-com-analysis-at-lichess/).
+Extension can be installed [here](https://addons.mozilla.org/en-US/firefox/addon/chess-com-analyse-at-lichess/).
 
 ## Author
 
