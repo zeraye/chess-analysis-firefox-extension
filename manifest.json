@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
   "name": "Chess.com analysis at lichess",
-  "version": "1.1",
+  "version": "1.2",
 
-  "description": "Analysing chess.com games at lichess.org for free.",
+  "description": "Analyse chess.com game at lichess.org for free.",
 
   "icons": {
     "512": "icons/icon-512.png"
@@ -20,7 +20,7 @@
     "default_icon": {
       "512": "icons/page-action-icon-512.png"
     },
-    "default_title": "Analyse game on lichess",
-    "show_matches": ["https://www.chess.com/game/live/*"]
+    "default_title": "Analyse game",
+    "show_matches": ["https://www.chess.com/game/*", "https://www.chess.com/analysis/game/live/*"]
   }
 }
