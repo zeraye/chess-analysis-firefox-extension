@@ -3,8 +3,14 @@ browser.pageAction.onClicked.addListener(async () => {
     code: `document.getElementsByClassName("download")[0].click();`,
   });
 
+  await new Promise(r => setTimeout(r, 500));
+
   await browser.tabs.executeScript({
-    code: `const e = document.querySelector("[name='isComputerAnalysisEnabled']"); if (e !== null) e.click();`,
+    code: `document.getElementsByClassName("board-tab-item-underlined-component share-menu-tab-selector-tab")[0].click();`,
+  });
+
+  await browser.tabs.executeScript({
+    code: `e = document.querySelector("[name='isComputerAnalysisEnabled']"); if (e !== null) e.click();`,
   });
 
   setTimeout(async () => {
@@ -17,6 +23,8 @@ browser.pageAction.onClicked.addListener(async () => {
     });
 
     await browser.tabs.create({ url: "https://lichess.org/paste" });
+
+    await new Promise(r => setTimeout(r, 500));
 
     const [logged] = await browser.tabs.executeScript({
       code: `!document.getElementById("form3-analyse").disabled;`
