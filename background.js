@@ -1,49 +1,53 @@
+const clickElement = async querySelector => {
+  await browser.tabs.executeScript({code: `
+    if (document.querySelector("${querySelector}"))
+      document.querySelector("${querySelector}").click();
+  `});
+}
+
+const waitForElement = async querySelector => {
+  let [isElement] = await browser.tabs.executeScript({code: `document.querySelector("${querySelector}") !== null;`});
+  let timeLeft = 1000;
+
+  while (!isElement && timeLeft > 0) {
+    await new Promise(r => setTimeout(r, 100));
+    [isElement] = await browser.tabs.executeScript({code: `document.querySelector("${querySelector}") !== null;`});
+    timeLeft -= 100;
+  }
+
+  return isElement;
+}
+
+const waitAndClick = async querySelector => {
+  if (await waitForElement(querySelector))
+    await clickElement(querySelector);
+}
+
 browser.pageAction.onClicked.addListener(async () => {
-  await browser.tabs.executeScript({
-    code: `document.getElementsByClassName("download")[0].click();`,
-  });
+  await waitAndClick(".download");
 
-  await new Promise(r => setTimeout(r, 500));
+  await waitAndClick(".board-tab-item-underlined-component");
 
-  await browser.tabs.executeScript({
-    code: `document.getElementsByClassName("board-tab-item-underlined-component share-menu-tab-selector-tab")[0].click();`,
-  });
+  if (await waitForElement("[name='pgn']")) {
+    const [pgn] = await browser.tabs.executeScript({code: `document.querySelector("[name='pgn']").value;`});
 
-  await browser.tabs.executeScript({
-    code: `e = document.querySelector("[name='isComputerAnalysisEnabled']"); if (e !== null) e.click();`,
-  });
+    await waitAndClick("[data-cy='share-menu-close']");
 
-  setTimeout(async () => {
-    const [pgn] = await browser.tabs.executeScript({
-      code: `document.querySelector("[name='pgn']").value;`,
-    });
-    
-    await browser.tabs.executeScript({
-      code: `document.getElementsByClassName("icon-font-chess x ui_outside-close-icon")[0].click();`,
-    });
+    await browser.tabs.create({url: "https://lichess.org/paste"});
 
-    await browser.tabs.create({ url: "https://lichess.org/paste" });
+    if (await waitForElement("[name='analyse']")) {
+      const [logged] = await browser.tabs.executeScript({code: `!document.querySelector("[name='analyse']").disabled;`});
 
-    await new Promise(r => setTimeout(r, 500));
+      if (logged)
+        await waitAndClick("[name='analyse']");
 
-    const [logged] = await browser.tabs.executeScript({
-      code: `!document.getElementById("form3-analyse").disabled;`
-    });
+      if (await waitForElement("[name='pgn']")) {
+        await browser.tabs.executeScript({code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`});
 
-    if (logged)
-      await browser.tabs.executeScript({
-        code: `document.getElementById("form3-analyse").click();`
-      });
+        await waitAndClick(".submit");
 
-    await browser.tabs.executeScript({
-      code:
-        "document.getElementById('form3-pgn').value = `" + pgn + "`; document.getElementsByClassName('submit')[0].click();",
-    });
-
-    await new Promise(r => setTimeout(r, 2000));
-
-    await browser.tabs.executeScript({
-      code: `document.querySelector("[for='analyse-toggle-ceval']").click();`,
-    });
-  }, 500);
+        await waitAndClick("[for='analyse-toggle-ceval']");
+      }
+    }
+  }
 });
