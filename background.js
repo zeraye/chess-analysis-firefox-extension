@@ -16,7 +16,6 @@ const clickElement = async querySelector => {
   await browser.tabs.executeScript({code: `
     if (document.querySelector("${querySelector}"))
       document.querySelector("${querySelector}").click();
-      console.log("Clicked ${querySelector}");
   `});
 }
 
