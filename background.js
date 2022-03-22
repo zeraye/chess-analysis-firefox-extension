@@ -1,49 +1,82 @@
+const showMessage = async message => {
+  await browser.tabs.executeScript({code: `
+    closeBtn = document.createElement("span");
+    closeBtn.textContent = "×";
+    closeBtn.setAttribute("style", "font-weight:bold;float:right;font-size:20px;line-height:18px;cursor:pointer;padding-left:15px;");
+    closeBtn.setAttribute("onclick", "this.parentElement.style.display='none';");
+    alertBox = document.createElement("div");
+    alertBox.setAttribute("style", "padding: 20px;background-color:#f44336;color:white;margin-bottom:15px;transition: opacity 0.3s linear 2s;opacity:0.83;");
+    alertBox.textContent = "${message}";
+    alertBox.appendChild(closeBtn);
+    document.querySelector(".caal-alerts").appendChild(alertBox);
+  `});
+}
+
+const clickElement = async querySelector => {
+  await browser.tabs.executeScript({code: `
+    if (document.querySelector("${querySelector}"))
+      document.querySelector("${querySelector}").click();
+  `});
+}
+
+const waitForElement = async querySelector => {
+  const elementFoundScript = `document.querySelector("${querySelector}") !== null;`;
+  const retryDelay = 100;
+
+  let timeLeft = 1000;
+  let [isElement] = await browser.tabs.executeScript({code: elementFoundScript});
+
+  while (!isElement && timeLeft > 0) {
+    await new Promise(r => setTimeout(r, retryDelay));
+    [isElement] = await browser.tabs.executeScript({code: elementFoundScript});
+    timeLeft -= retryDelay;
+  }
+
+  if (!isElement)
+    showMessage(`Cannot find \`${querySelector}\` element!`);
+
+  return isElement;
+}
+
+const waitAndClick = async querySelector => {
+  if (await waitForElement(querySelector))
+    await clickElement(querySelector);
+}
+
 browser.pageAction.onClicked.addListener(async () => {
-  await browser.tabs.executeScript({
-    code: `document.getElementsByClassName("download")[0].click();`,
-  });
+  await browser.tabs.executeScript({code: `
+    if (!document.querySelector(".caal-alerts")) {
+      alerts = document.createElement("div")
+      alerts.setAttribute("class", "caal-alerts");
+      alerts.setAttribute("style", "position:absolute;");
+      document.body.appendChild(alerts);
+    }
+  `});
 
-  await new Promise(r => setTimeout(r, 500));
+  await waitAndClick(".download");
 
-  await browser.tabs.executeScript({
-    code: `document.getElementsByClassName("board-tab-item-underlined-component share-menu-tab-selector-tab")[0].click();`,
-  });
+  await waitAndClick(".board-tab-item-underlined-component");
 
-  await browser.tabs.executeScript({
-    code: `e = document.querySelector("[name='isComputerAnalysisEnabled']"); if (e !== null) e.click();`,
-  });
+  if (await waitForElement("[name='pgn']")) {
+    const [pgn] = await browser.tabs.executeScript({code: `document.querySelector("[name='pgn']").value;`});
 
-  setTimeout(async () => {
-    const [pgn] = await browser.tabs.executeScript({
-      code: `document.querySelector("[name='pgn']").value;`,
-    });
-    
-    await browser.tabs.executeScript({
-      code: `document.getElementsByClassName("icon-font-chess x ui_outside-close-icon")[0].click();`,
-    });
+    await waitAndClick("[data-cy='share-menu-close']");
 
-    await browser.tabs.create({ url: "https://lichess.org/paste" });
+    await browser.tabs.create({url: "https://lichess.org/paste"});
 
-    await new Promise(r => setTimeout(r, 500));
+    if (await waitForElement("[name='analyse']")) {
+      const [loggedIn] = await browser.tabs.executeScript({code: `!document.querySelector("[name='analyse']").disabled;`});
 
-    const [logged] = await browser.tabs.executeScript({
-      code: `!document.getElementById("form3-analyse").disabled;`
-    });
+      if (loggedIn)
+        await waitAndClick("[name='analyse']");
 
-    if (logged)
-      await browser.tabs.executeScript({
-        code: `document.getElementById("form3-analyse").click();`
-      });
+      if (await waitForElement("[name='pgn']")) {
+        await browser.tabs.executeScript({code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`});
 
-    await browser.tabs.executeScript({
-      code:
-        "document.getElementById('form3-pgn').value = `" + pgn + "`; document.getElementsByClassName('submit')[0].click();",
-    });
+        await waitAndClick(".submit");
 
-    await new Promise(r => setTimeout(r, 2000));
-
-    await browser.tabs.executeScript({
-      code: `document.querySelector("[for='analyse-toggle-ceval']").click();`,
-    });
-  }, 500);
+        await waitAndClick("[for='analyse-toggle-ceval']");
+      }
+    }
+  }
 });
