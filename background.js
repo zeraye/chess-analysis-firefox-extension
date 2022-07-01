@@ -61,7 +61,7 @@ browser.pageAction.onClicked.addListener(async () => {
   `,
   });
 
-  await waitAndClick('.download');
+  await waitAndClick('.share');
 
   await waitAndClick('.board-tab-item-underlined-component');
 
