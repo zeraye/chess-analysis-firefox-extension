@@ -12,7 +12,7 @@
   "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
 
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["src/background.js"]
   },
 
   "content_scripts": [
@@ -22,7 +22,7 @@
         "https://www.chess.com/analysis/game/live/*",
         "https://www.chess.com/analysis/game/daily/*"
       ],
-      "js": ["createLoading.js"],
+      "js": ["src/createLoading.js"],
       "css": ["css/createLoading.css"]
     }
   ],
