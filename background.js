@@ -1,3 +1,33 @@
+const setLoadingState = async (active) => {
+  const activeCss = `.caal-loading {
+    position: absolute;
+    display: flex;
+    background: #85a94e;
+    padding: 1em;
+
+    transform: translateX(-50%);
+    left: 50%;
+    margin-top: 40vh;
+
+    z-index: 2000;
+
+    box-shadow: 0 var(--borderHeight) 0 0 var(--borderColor),0 .7rem .95rem .05rem var(--secondaryBorderColor);
+    border-radius: var(--borderRadius,.5rem);
+
+    color: #fff;
+    font-family: var(--globalSecondaryFont);
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 700;
+    text-shadow: 0 .1rem 0 rgba(0,0,0,.4);
+  }`;
+
+  const deactiveCss = `.caal-loading {
+    display: none;
+  }`;
+
+  browser.tabs.insertCSS({ code: active ? activeCss : deactiveCss });
+};
 const sendLogMessage = async (message) => {
   await browser.tabs.executeScript({
     code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
@@ -36,16 +66,16 @@ const waitAndClick = async (querySelector) => {
   if (await waitForElement(querySelector)) await clickElement(querySelector);
 };
 
-browser.pageAction.onClicked.addListener(async () => {
-  await browser.tabs.executeScript({
+browser.pageAction.onClicked.addListener(async (tab) => {
+  browser.tabs.executeScript({
     code: `
-    if (!document.querySelector(".caal-alerts")) {
-      alerts = document.createElement("div")
-      alerts.setAttribute("class", "caal-alerts");
-      alerts.setAttribute("style", "position:absolute;");
-      document.body.appendChild(alerts);
-    }
-  `,
+      if (!document.querySelector(".caal-loading")) {
+        const loading = document.createElement("div");
+        loading.textContent = "Analysing chess game...";
+        loading.setAttribute("class", "caal-loading");
+        document.body.appendChild(loading);
+      }
+    `,
   });
 
   await waitAndClick('.share');
