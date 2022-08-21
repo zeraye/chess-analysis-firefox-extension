@@ -44,6 +44,10 @@ const getPGN = async (playerName, gameUrl) => {
       )
     ).archives;
 
+    // Archives are given from the oldest to the most recet games.
+    // Thus iterating from the last one (the most recent) is usually
+    // better, because players usually want to analyse their most recent
+    // games. So you will make less fetches
   for (let i = archives.length - 1; i >= 0; i--) {
       const games = (await fetchJSON(archives[i])).games;
     for (let j = games.length - 1; j >= 0; j--) {
