@@ -91,17 +91,13 @@ const waitAndClick = async (querySelector) => {
   if (await waitForElement(querySelector)) await clickElement(querySelector);
 };
 
-browser.pageAction.onClicked.addListener(async (tab) => {
-  browser.tabs.executeScript({
-    code: `
-      if (!document.querySelector(".caal-loading")) {
-        const loading = document.createElement("div");
-        loading.textContent = "Analysing chess game...";
-        loading.setAttribute("class", "caal-loading");
-        document.body.appendChild(loading);
-      }
-    `,
-  });
+let analysingState = false;
+
+const analyseGame = async (tab) => {
+  // After clicking on pageAction twice, second call won't be executed
+  if (analysingState) return;
+
+  analysingState = true;
 
   await setLoadingState(true);
 
@@ -116,6 +112,7 @@ browser.pageAction.onClicked.addListener(async (tab) => {
 
   if (!pgn) {
     sendLogMessage(`Game with id ${gameId} not found!`);
+    analysingState = false;
     return;
   }
 
@@ -138,4 +135,8 @@ browser.pageAction.onClicked.addListener(async (tab) => {
       await waitAndClick("[for='analyse-toggle-ceval']");
     }
   }
-});
+
+  analysingState = false;
+};
+
+browser.pageAction.onClicked.addListener(analyseGame);
