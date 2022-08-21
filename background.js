@@ -103,7 +103,7 @@ browser.pageAction.onClicked.addListener(async (tab) => {
     `,
   });
 
-  await waitAndClick('.share');
+  await setLoadingState(true);
 
   const [playerName] = await browser.tabs.executeScript({
     code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
@@ -111,7 +111,7 @@ browser.pageAction.onClicked.addListener(async (tab) => {
 
   const pgn = await getPGN(playerName, tab.url.split("?")[0]);
 
-    await waitAndClick("[data-cy='share-menu-close']");
+  await setLoadingState(false);
 
   await browser.tabs.create({ url: "https://lichess.org/paste" });
 
