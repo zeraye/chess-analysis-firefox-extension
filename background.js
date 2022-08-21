@@ -1,25 +1,6 @@
 const setLoadingState = async (active) => {
   const activeCss = `.caal-loading {
-    position: absolute;
     display: flex;
-    background: #85a94e;
-    padding: 1em;
-
-    transform: translateX(-50%);
-    left: 50%;
-    margin-top: 40vh;
-
-    z-index: 2000;
-
-    box-shadow: 0 var(--borderHeight) 0 0 var(--borderColor),0 .7rem .95rem .05rem var(--secondaryBorderColor);
-    border-radius: var(--borderRadius,.5rem);
-
-    color: #fff;
-    font-family: var(--globalSecondaryFont);
-    font-size: 3rem;
-    line-height: 1;
-    font-weight: 700;
-    text-shadow: 0 .1rem 0 rgba(0,0,0,.4);
   }`;
 
   const inactiveCss = `.caal-loading {

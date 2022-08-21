@@ -15,6 +15,18 @@
     "scripts": ["background.js"]
   },
 
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis/game/live/*",
+        "https://www.chess.com/analysis/game/daily/*"
+      ],
+      "js": ["createLoading.js"],
+      "css": ["css/createLoading.css"]
+    }
+  ],
+
   "page_action": {
     "browser_style": true,
     "default_icon": {
