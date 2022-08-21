@@ -28,6 +28,31 @@ const setLoadingState = async (active) => {
 
   browser.tabs.insertCSS({ code: active ? activeCss : deactiveCss });
 };
+
+const fetchField = async (url, field) => {
+  const response = await fetch(url);
+  const data = await response.json();
+  return data[field];
+};
+
+const getPGN = async (playerName, gameUrl) => {
+  const archives = await fetchField(
+    `https://api.chess.com/pub/player/${playerName}/games/archives`,
+    "archives"
+  );
+
+  for (let i = archives.length - 1; i >= 0; i--) {
+    games = await fetchField(archives[i], "games");
+    for (let j = games.length - 1; j >= 0; j--) {
+      if (games[j]["url"] === gameUrl) {
+        return games[j]["pgn"];
+      }
+    }
+  }
+
+  return null;
+};
+
 const sendLogMessage = async (message) => {
   await browser.tabs.executeScript({
     code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
