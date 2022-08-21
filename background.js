@@ -1,16 +1,6 @@
-const showMessage = async (message) => {
+const sendLogMessage = async (message) => {
   await browser.tabs.executeScript({
-    code: `
-    closeBtn = document.createElement("span");
-    closeBtn.textContent = "×";
-    closeBtn.setAttribute("style", "font-weight:bold;float:right;font-size:20px;line-height:18px;cursor:pointer;padding-left:15px;");
-    closeBtn.setAttribute("onclick", "this.parentElement.style.display='none';");
-    alertBox = document.createElement("div");
-    alertBox.setAttribute("style", "padding: 20px;background-color:#f44336;color:white;margin-bottom:15px;transition: opacity 0.3s linear 2s;opacity:0.83;");
-    alertBox.textContent = "${message}";
-    alertBox.appendChild(closeBtn);
-    document.querySelector(".caal-alerts").appendChild(alertBox);
-  `,
+    code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
   });
 };
 
@@ -40,7 +30,7 @@ const waitForElement = async (querySelector) => {
     timeLeft -= retryDelay;
   }
 
-  if (!isElement) showMessage(`Cannot find \`${querySelector}\` element!`);
+  if (!isElement) sendLogMessage(`Cannot find \`${querySelector}\` element!`);
 
   return isElement;
 };
