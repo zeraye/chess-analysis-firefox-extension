@@ -22,11 +22,11 @@ const setLoadingState = async (active) => {
     text-shadow: 0 .1rem 0 rgba(0,0,0,.4);
   }`;
 
-  const deactiveCss = `.caal-loading {
+  const inactiveCss = `.caal-loading {
     display: none;
   }`;
 
-  browser.tabs.insertCSS({ code: active ? activeCss : deactiveCss });
+  browser.tabs.insertCSS({ code: active ? activeCss : inactiveCss });
 };
 
 const fetchField = async (url, field) => {
