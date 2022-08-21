@@ -29,23 +29,23 @@ const setLoadingState = async (active) => {
   browser.tabs.insertCSS({ code: active ? activeCss : inactiveCss });
 };
 
-const fetchField = async (url, field) => {
-  const response = await fetch(url);
-  const data = await response.json();
-  return data[field];
+const fetchJSON = async (url) => {
+    const response = await fetch(url);
+    return response.json();
 };
 
 // Portable Game Notation (PGN) is a standard plain text format for
 // recording chess games, which can be read by humans and is also
 // supported by most chess software
 const getPGN = async (playerName, gameUrl) => {
-  const archives = await fetchField(
-    `https://api.chess.com/pub/player/${playerName}/games/archives`,
-    "archives"
-  );
+    const archives = (
+      await fetchJSON(
+        `https://api.chess.com/pub/player/${playerName}/games/archives`
+      )
+    ).archives;
 
   for (let i = archives.length - 1; i >= 0; i--) {
-    games = await fetchField(archives[i], "games");
+      games = (await fetchJSON(archives[i])).games;
     for (let j = games.length - 1; j >= 0; j--) {
       if (games[j]["url"] === gameUrl) {
         return games[j]["pgn"];
