@@ -108,10 +108,16 @@ browser.pageAction.onClicked.addListener(async (tab) => {
   const [playerName] = await browser.tabs.executeScript({
     code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
   });
+  const gameId = tab.url.split("?")[0];
 
-  const pgn = await getPGN(playerName, tab.url.split("?")[0]);
+  const pgn = await getPGN(playerName, gameId);
 
   await setLoadingState(false);
+
+  if (!pgn) {
+    sendLogMessage(`Game with id ${gameId} not found!`);
+    return;
+  }
 
   await browser.tabs.create({ url: "https://lichess.org/paste" });
 
