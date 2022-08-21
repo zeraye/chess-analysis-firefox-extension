@@ -6,10 +6,7 @@ const sendLogMessage = async (message) => {
 
 const clickElement = async (querySelector) => {
   await browser.tabs.executeScript({
-    code: `
-    if (document.querySelector("${querySelector}"))
-      document.querySelector("${querySelector}").click();
-  `,
+    code: `document.querySelector("${querySelector}").click();`,
   });
 };
 
