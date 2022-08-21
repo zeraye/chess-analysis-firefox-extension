@@ -45,7 +45,7 @@ const getPGN = async (playerName, gameUrl) => {
     ).archives;
 
   for (let i = archives.length - 1; i >= 0; i--) {
-      games = (await fetchJSON(archives[i])).games;
+      const games = (await fetchJSON(archives[i])).games;
     for (let j = games.length - 1; j >= 0; j--) {
       if (games[j]["url"] === gameUrl) {
         return games[j]["pgn"];
