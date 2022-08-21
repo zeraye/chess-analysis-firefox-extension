@@ -27,7 +27,7 @@ const waitForElement = async (querySelector) => {
   const elementFoundScript = `document.querySelector("${querySelector}") !== null;`;
   const retryDelay = 100;
 
-  let timeLeft = 1000;
+  let timeLeft = 5000;
   let [isElement] = await browser.tabs.executeScript({
     code: elementFoundScript,
   });
