@@ -105,33 +105,31 @@ browser.pageAction.onClicked.addListener(async (tab) => {
 
   await waitAndClick('.share');
 
-  await waitAndClick('.board-tab-item-underlined-component');
+  const [playerName] = await browser.tabs.executeScript({
+    code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
+  });
 
-  if (await waitForElement("[name='pgn']")) {
-    const [pgn] = await browser.tabs.executeScript({
-      code: `document.querySelector("[name='pgn']").value;`,
-    });
+  const pgn = await getPGN(playerName, tab.url.split("?")[0]);
 
     await waitAndClick("[data-cy='share-menu-close']");
 
-    await browser.tabs.create({ url: 'https://lichess.org/paste' });
+  await browser.tabs.create({ url: "https://lichess.org/paste" });
 
-    if (await waitForElement("[name='analyse']")) {
-      const [loggedIn] = await browser.tabs.executeScript({
-        code: `!document.querySelector("[name='analyse']").disabled;`,
+  if (await waitForElement("[name='analyse']")) {
+    const [loggedIn] = await browser.tabs.executeScript({
+      code: `!document.querySelector("[name='analyse']").disabled;`,
+    });
+
+    if (loggedIn) await waitAndClick("[name='analyse']");
+
+    if (await waitForElement("[name='pgn']")) {
+      await browser.tabs.executeScript({
+        code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
       });
 
-      if (loggedIn) await waitAndClick("[name='analyse']");
+      await waitAndClick(".submit");
 
-      if (await waitForElement("[name='pgn']")) {
-        await browser.tabs.executeScript({
-          code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
-        });
-
-        await waitAndClick('.submit');
-
-        await waitAndClick("[for='analyse-toggle-ceval']");
-      }
+      await waitAndClick("[for='analyse-toggle-ceval']");
     }
   }
 });
