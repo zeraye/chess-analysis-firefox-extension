@@ -99,44 +99,49 @@ const analyseGame = async (tab) => {
 
   analysingState = true;
 
-  await setLoadingState(true);
+  try {
+    await setLoadingState(true);
 
-  const [playerName] = await browser.tabs.executeScript({
-    code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
-  });
-  const gameId = tab.url.split("?")[0];
-
-  const pgn = await getPGN(playerName, gameId);
-
-  await setLoadingState(false);
-
-  if (!pgn) {
-    sendLogMessage(`Game with id ${gameId} not found!`);
-    analysingState = false;
-    return;
-  }
-
-  await browser.tabs.create({ url: "https://lichess.org/paste" });
-
-  if (await waitForElement("[name='analyse']")) {
-    const [loggedIn] = await browser.tabs.executeScript({
-      code: `!document.querySelector("[name='analyse']").disabled;`,
+    const [playerName] = await browser.tabs.executeScript({
+      code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
     });
+    const gameId = tab.url.split("?")[0];
 
-    if (loggedIn) await waitAndClick("[name='analyse']");
+    const pgn = await getPGN(playerName, gameId);
 
-    if (await waitForElement("[name='pgn']")) {
-      await browser.tabs.executeScript({
-        code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
+    await setLoadingState(false);
+
+    if (!pgn) {
+      sendLogMessage(`Game with id ${gameId} not found!`);
+      analysingState = false;
+      return;
+    }
+
+    await browser.tabs.create({ url: "https://lichess.org/paste" });
+
+    if (await waitForElement("[name='analyse']")) {
+      const [loggedIn] = await browser.tabs.executeScript({
+        code: `!document.querySelector("[name='analyse']").disabled;`,
       });
 
-      await waitAndClick(".submit");
+      if (loggedIn) await waitAndClick("[name='analyse']");
 
-      await waitAndClick("[for='analyse-toggle-ceval']");
+      if (await waitForElement("[name='pgn']")) {
+        await browser.tabs.executeScript({
+          code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
+        });
+
+        await waitAndClick(".submit");
+
+        await waitAndClick("[for='analyse-toggle-ceval']");
+      }
     }
+  } catch (error) {
+    sendLogMessage(error);
+  } finally {
+    await setLoadingState(false);
+    analysingState = false;
   }
-
-  analysingState = false;
 };
 
 browser.pageAction.onClicked.addListener(analyseGame);
