@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
-  "name": "Chess.com analysis at lichess",
-  "version": "1.5",
+  "name": "Chess.com analyse at lichess",
+  "version": "1.6.1",
 
   "description": "Analyse chess.com game at lichess.org for free.",
 
@@ -12,8 +12,20 @@
   "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
 
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["src/background.js"]
   },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/analysis/game/live/*",
+        "https://www.chess.com/analysis/game/daily/*"
+      ],
+      "js": ["src/createLoading.js"],
+      "css": ["css/createLoading.css"]
+    }
+  ],
 
   "page_action": {
     "browser_style": true,
