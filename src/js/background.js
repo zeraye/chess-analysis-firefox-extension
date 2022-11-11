@@ -1,11 +1,19 @@
 const setLoadingState = async (active, tabId) => {
-  const activeCss = `.caal-loading {
-    display: flex;
-  }`;
+  const [calExist] = await browser.tabs.executeScript(tabId, {
+    code: `document.querySelector(".cal-loading") !== null;`,
+  });
 
-  const inactiveCss = `.caal-loading {
-    display: none;
-  }`;
+  if (!calExist) {
+    await browser.tabs.executeScript(tabId, {
+      file: "/src/js/createLoading.js",
+    });
+    await browser.tabs.insertCSS(tabId, { file: "/src/css/createLoading.css" });
+  }
+
+  await browser.tabs.executeScript(tabId, {
+    code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
+  });
+};
 
 const sendLogMessage = async (message, tabId) => {
   await browser.tabs.executeScript(tabId, {
