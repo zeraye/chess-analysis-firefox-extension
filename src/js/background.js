@@ -120,7 +120,39 @@ const waitAndClick = async (querySelector, tabId) => {
     await clickElement(querySelector, tabId);
 };
 
-let analysingState = false;
+const lichessAnalyse = async (tabId, pgn) => {
+  if (await waitForElement("[name='analyse']", tabId)) {
+    const [loggedIn] = await browser.tabs.executeScript(tabId, {
+      code: `!document.querySelector("[name='analyse']").disabled;`,
+    });
+    if (loggedIn) await waitAndClick("[name='analyse']", tabId);
+
+    if (await waitForElement("[name='pgn']", tabId)) {
+      await browser.tabs.executeScript(tabId, {
+        code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
+      });
+      await waitAndClick(".submit", tabId);
+
+      /*
+       * Bugfix where status was loading and firefox throwed
+       * an error about invalid host permissions
+       */
+      let status = "loading";
+      while (status === "loading") {
+        let getting = await browser.tabs.get(tabId);
+        status = getting.status;
+      }
+
+      if (await waitForElement("#analyse-toggle-ceval", tabId)) {
+        const [localEval] = await browser.tabs.executeScript(tabId, {
+          code: `document.querySelector("#analyse-toggle-ceval").checked;`,
+        });
+        if (!localEval)
+          await waitAndClick("[for='analyse-toggle-ceval']", tabId);
+      }
+    }
+  }
+};
 
 /*
  * Structure:
@@ -167,16 +199,16 @@ const analyseGame = async (tab) => {
      * with tabId from lichess tab.
      */
 
-      if (await waitForElement("[name='pgn']")) {
-        await browser.tabs.executeScript({
-          code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
-        });
+    let lichessTab = await browser.tabs.create({
+      url: "https://lichess.org/paste",
+    });
+    await lichessAnalyse(lichessTab.id, pgn);
+  } catch (error) {
+    sendLogMessage(error, tab.id);
+  }
 
-        await waitAndClick(".submit");
-
-        await waitAndClick("[for='analyse-toggle-ceval']");
-      }
-    }
+  try {
+    await setLoadingState(false, tab.id);
   } catch (error) {
     sendLogMessage(error, tab.id);
   } finally {
