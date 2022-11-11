@@ -1,4 +1,4 @@
-const setLoadingState = async (active) => {
+const setLoadingState = async (active, tabId) => {
   const activeCss = `.caal-loading {
     display: flex;
   }`;
@@ -10,14 +10,14 @@ const setLoadingState = async (active) => {
   browser.tabs.insertCSS({ code: active ? activeCss : inactiveCss });
 };
 
-const fetchJSON = async (url) => {
+const fetchJSON = async (url, tabId) => {
   try {
     const response = await fetch(url);
     if (!response.ok)
       throw new Error("Error when attempting to fetch resource.");
     return response.json();
   } catch (error) {
-    sendLogMessage(error);
+    sendLogMessage(error, tabId);
     return null;
   }
 };
@@ -27,10 +27,12 @@ const fetchJSON = async (url) => {
  * recording chess games, which can be read by humans and is also
  * supported by most chess software
  */
+const getPGN = async (playerName, gameUrl, tabId) => {
   try {
     const archives = (
       await fetchJSON(
-        `https://api.chess.com/pub/player/${playerName}/games/archives`
+        `https://api.chess.com/pub/player/${playerName}/games/archives`,
+        tabId
       )
     ).archives;
     /*
@@ -40,7 +42,7 @@ const fetchJSON = async (url) => {
      * games. You will probably make less fetches
      */
     for (let i = archives.length - 1; i >= 0; i--) {
-      const games = (await fetchJSON(archives[i])).games;
+      const games = (await fetchJSON(archives[i], tabId)).games;
       for (let j = games.length - 1; j >= 0; j--) {
         if (games[j].url === gameUrl) {
           return games[j].pgn;
@@ -48,7 +50,7 @@ const fetchJSON = async (url) => {
       }
     }
   } catch (error) {
-    sendLogMessage(error);
+    sendLogMessage(error, tabId);
     return null;
   }
 
@@ -61,58 +63,72 @@ const sendLogMessage = async (message) => {
   });
 };
 
-const clickElement = async (querySelector) => {
-  await browser.tabs.executeScript({
+const clickElement = async (querySelector, tabId) => {
+  await browser.tabs.executeScript(tabId, {
     code: `document.querySelector("${querySelector}").click();`,
   });
 };
 
-const waitForElement = async (querySelector) => {
+const waitForElement = async (
+  querySelector,
+  tabId,
+  timeLeft = 5000,
+  retryDelay = 100
+) => {
   const elementFoundScript = `document.querySelector("${querySelector}") !== null;`;
-  const retryDelay = 100;
 
-  let timeLeft = 5000;
-  let [isElement] = await browser.tabs.executeScript({
-    code: elementFoundScript,
-  });
+  let isElement = null;
 
   while (!isElement && timeLeft > 0) {
     await new Promise((r) => setTimeout(r, retryDelay));
-    [isElement] = await browser.tabs.executeScript({
+    timeLeft -= retryDelay;
+    [isElement] = await browser.tabs.executeScript(tabId, {
       code: elementFoundScript,
     });
-    timeLeft -= retryDelay;
   }
 
-  if (!isElement) sendLogMessage(`Cannot find \`${querySelector}\` element!`);
+  if (!isElement)
+    sendLogMessage(`Cannot find \`${querySelector}\` element!`, tabId);
 
   return isElement;
 };
 
-const waitAndClick = async (querySelector) => {
-  if (await waitForElement(querySelector)) await clickElement(querySelector);
+const waitAndClick = async (querySelector, tabId) => {
+  if (await waitForElement(querySelector, tabId))
+    await clickElement(querySelector, tabId);
 };
 
 let analysingState = false;
 
+/*
+ * Structure:
+ * {
+ *   tabId0: bool,
+ *   tabId1: bool
+ * }
+ */
+let analysingState = {};
+
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
+  if (analysingState[tab.id]) return;
+  analysingState[tab.id] = true;
 
   try {
-    await setLoadingState(true);
+    await setLoadingState(true, tab.id);
 
-    const [playerName] = await browser.tabs.executeScript({
+    const [playerName] = await browser.tabs.executeScript(tab.id, {
       code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
     });
+
     const gameId = tab.url.split("?")[0];
 
-    const pgn = await getPGN(playerName, gameId);
+    let pgn = await getPGN(playerName, gameId, tab.id);
 
-    await setLoadingState(false);
+    await setLoadingState(false, tab.id);
 
     if (!pgn) {
-      sendLogMessage(`Game with id ${gameId} not found!`);
-      analysingState = false;
+      sendLogMessage(`Game with id ${gameId} not found!`, tab.id);
       return;
     }
 
@@ -123,7 +139,10 @@ const analyseGame = async (tab) => {
         code: `!document.querySelector("[name='analyse']").disabled;`,
       });
 
-      if (loggedIn) await waitAndClick("[name='analyse']");
+    /*
+     * TODO: In the future the code below will be executed
+     * with tabId from lichess tab.
+     */
 
       if (await waitForElement("[name='pgn']")) {
         await browser.tabs.executeScript({
@@ -136,10 +155,9 @@ const analyseGame = async (tab) => {
       }
     }
   } catch (error) {
-    sendLogMessage(error);
+    sendLogMessage(error, tab.id);
   } finally {
-    await setLoadingState(false);
-    analysingState = false;
+    analysingState[tab.id] = false;
   }
 };
 
