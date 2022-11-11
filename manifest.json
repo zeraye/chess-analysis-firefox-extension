@@ -8,13 +8,13 @@
   "author": "zeraye",
 
   "icons": {
-    "64": "icons/addon-icon-64.png"
+    "64": "src/icons/addon-icon-64.png"
   },
 
   "permissions": ["https://www.chess.com/*", "https://lichess.org/*", "tabs"],
 
   "background": {
-    "scripts": ["src/background.js"]
+    "scripts": ["src/js/background.js"]
   },
 
   "content_scripts": [
@@ -25,13 +25,13 @@
         "https://www.chess.com/analysis/game/daily/*",
         "https://www.chess.com/analysis/game/computer/*"
       ],
-      "js": ["src/createLoading.js"],
-      "css": ["css/createLoading.css"]
+      "js": ["src/js/createLoading.js"],
+      "css": ["src/css/createLoading.css"]
     }
   ],
 
   "page_action": {
-    "default_icon": "icons/page-action-icon-64.png",
+    "default_icon": "src/icons/page-action-icon-64.png",
     "default_title": "Analyse game",
     "show_matches": [
       "https://www.chess.com/game/*",
