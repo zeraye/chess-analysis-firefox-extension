@@ -1,10 +1,10 @@
 {
   "manifest_version": 2,
-  "name": "Chess.com analyse at lichess",
-  "version": "1.7.0",
 
+  "name": "Chess.com analyse at lichess",
   "description": "Analyse chess.com game at lichess.org for free.",
   "homepage_url": "https://github.com/Zeraye/chess-analysis-firefox-extension/",
+  "version": "1.7.0",
   "author": "zeraye",
 
   "icons": {
