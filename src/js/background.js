@@ -22,21 +22,23 @@ const fetchJSON = async (url) => {
   }
 };
 
-// Portable Game Notation (PGN) is a standard plain text format for
-// recording chess games, which can be read by humans and is also
-// supported by most chess software
-const getPGN = async (playerName, gameUrl) => {
+/*
+ * Portable Game Notation (PGN) is a standard plain text format for
+ * recording chess games, which can be read by humans and is also
+ * supported by most chess software
+ */
   try {
     const archives = (
       await fetchJSON(
         `https://api.chess.com/pub/player/${playerName}/games/archives`
       )
     ).archives;
-
-    // Archives are given from the oldest to the most recet games.
-    // Thus iterating from the last one (the most recent) is usually
-    // better, because players usually want to analyse their most recent
-    // games. So you will make less fetches
+    /*
+     * Archives are given from the oldest to the most recet games.
+     * Thus iterating from the last one (the most recent) is usually
+     * better, because players usually want to analyse their most recent
+     * games. You will probably make less fetches
+     */
     for (let i = archives.length - 1; i >= 0; i--) {
       const games = (await fetchJSON(archives[i])).games;
       for (let j = games.length - 1; j >= 0; j--) {
@@ -94,10 +96,7 @@ const waitAndClick = async (querySelector) => {
 let analysingState = false;
 
 const analyseGame = async (tab) => {
-  // After clicking on pageAction twice, second call won't be executed
-  if (analysingState) return;
-
-  analysingState = true;
+  /* After clicking on pageAction twice, second call won't be executed */
 
   try {
     await setLoadingState(true);
