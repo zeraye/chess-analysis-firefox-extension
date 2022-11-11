@@ -6,7 +6,7 @@
   "description": "Analyse chess.com game at lichess.org for free.",
 
   "icons": {
-    "512": "icons/icon-512.png"
+    "64": "icons/addon-icon-64.png"
   },
 
   "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
@@ -28,10 +28,7 @@
   ],
 
   "page_action": {
-    "browser_style": true,
-    "default_icon": {
-      "512": "icons/page-action-icon-512.png"
-    },
+    "default_icon": "icons/page-action-icon-64.png",
     "default_title": "Analyse game",
     "show_matches": [
       "https://www.chess.com/game/*",
