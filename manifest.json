@@ -4,6 +4,8 @@
   "version": "1.6.1",
 
   "description": "Analyse chess.com game at lichess.org for free.",
+  "homepage_url": "https://github.com/Zeraye/chess-analysis-firefox-extension/",
+  "author": "zeraye",
 
   "icons": {
     "64": "icons/addon-icon-64.png"
