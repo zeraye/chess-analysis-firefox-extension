@@ -7,7 +7,10 @@ const setLoadingState = async (active, tabId) => {
     display: none;
   }`;
 
-  browser.tabs.insertCSS({ code: active ? activeCss : inactiveCss });
+const sendLogMessage = async (message, tabId) => {
+  await browser.tabs.executeScript(tabId, {
+    code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
+  });
 };
 
 const fetchJSON = async (url, tabId) => {
@@ -57,10 +60,21 @@ const getPGN = async (playerName, gameUrl, tabId) => {
   return null;
 };
 
-const sendLogMessage = async (message) => {
-  await browser.tabs.executeScript({
-    code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
-  });
+const getPGNManual = async (tabId) => {
+  await waitAndClick(".share");
+  await waitAndClick(".board-tab-item-underlined-component");
+  await waitAndClick(".share-menu-tab-pgn-toggle");
+
+  if (await waitForElement("[name='pgn']")) {
+    const [pgn] = await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector("[name='pgn']").value;`,
+    });
+    await waitAndClick("[data-cy='share-menu-close']");
+
+    return pgn;
+  }
+
+  return null;
 };
 
 const clickElement = async (querySelector, tabId) => {
@@ -128,16 +142,17 @@ const analyseGame = async (tab) => {
     await setLoadingState(false, tab.id);
 
     if (!pgn) {
-      sendLogMessage(`Game with id ${gameId} not found!`, tab.id);
-      return;
+      sendLogMessage(
+        `Game with id ${gameId} not found! Performing manual fetching.`,
+        tab.id
+      );
+      pgn = await getPGNManual(tab.id);
     }
 
-    await browser.tabs.create({ url: "https://lichess.org/paste" });
-
-    if (await waitForElement("[name='analyse']")) {
-      const [loggedIn] = await browser.tabs.executeScript({
-        code: `!document.querySelector("[name='analyse']").disabled;`,
-      });
+    if (!pgn) {
+      sendLogMessage(`Game not found!`, tab.id);
+      analysingState[tab.id] = false;
+    }
 
     /*
      * TODO: In the future the code below will be executed
