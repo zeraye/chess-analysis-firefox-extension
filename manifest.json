@@ -9,7 +9,7 @@
     "64": "icons/addon-icon-64.png"
   },
 
-  "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
+  "permissions": ["https://www.chess.com/*", "https://lichess.org/*", "tabs"],
 
   "background": {
     "scripts": ["src/background.js"]
