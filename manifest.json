@@ -20,7 +20,8 @@
       "matches": [
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*"
+        "https://www.chess.com/analysis/game/daily/*",
+        "https://www.chess.com/analysis/game/computer/*"
       ],
       "js": ["src/createLoading.js"],
       "css": ["css/createLoading.css"]
@@ -33,7 +34,8 @@
     "show_matches": [
       "https://www.chess.com/game/*",
       "https://www.chess.com/analysis/game/live/*",
-      "https://www.chess.com/analysis/game/daily/*"
+      "https://www.chess.com/analysis/game/daily/*",
+      "https://www.chess.com/analysis/game/computer/*"
     ]
   }
 }
