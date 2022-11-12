@@ -194,11 +194,6 @@ const analyseGame = async (tab) => {
       analysingState[tab.id] = false;
     }
 
-    /*
-     * TODO: In the future the code below will be executed
-     * with tabId from lichess tab.
-     */
-
     let lichessTab = await browser.tabs.create({
       url: "https://lichess.org/paste",
     });
