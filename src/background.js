@@ -91,6 +91,13 @@ const waitAndClick = async (querySelector) => {
   if (await waitForElement(querySelector)) await clickElement(querySelector);
 };
 
+const getBlackPlayer = (pgn) => {
+  const blackPlayerRegex = /\[Black\s+"([^"]+)"\]/;
+  const match = pgn.match(blackPlayerRegex);
+
+  return (match && match.length > 1) ? match[1] : null;
+}
+
 let analysingState = false;
 
 const analyseGame = async (tab) => {
@@ -105,6 +112,12 @@ const analyseGame = async (tab) => {
     const [playerName] = await browser.tabs.executeScript({
       code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
     });
+
+    // get logged in user (needed to flip the board if the logged in user is black)
+    const [loggedInUser] = await browser.tabs.executeScript({
+      code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
+    }).catch(console.error);
+
     const gameId = tab.url.split("?")[0];
 
     const pgn = await getPGN(playerName, gameId);
@@ -134,6 +147,20 @@ const analyseGame = async (tab) => {
         await waitAndClick(".submit");
 
         await waitAndClick("[for='analyse-toggle-ceval']");
+
+        // If the user played as black, flip the board (by opening /black)
+        if (getBlackPlayer(pgn) == loggedInUser) {
+          browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+            const tab = tabs[0];
+
+            // Update the URL by appending "/black" to view from black's perspective
+            const newUrl = tab.url + "/black";
+            browser.tabs.update(tab.id, { url: newUrl });
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+        }
       }
     }
   } catch (error) {
