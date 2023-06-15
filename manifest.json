@@ -1,18 +1,20 @@
 {
   "manifest_version": 2,
-  "name": "Chess.com analyse at lichess",
-  "version": "1.6.1",
 
+  "name": "Chess.com analyse at lichess",
   "description": "Analyse chess.com game at lichess.org for free.",
+  "homepage_url": "https://github.com/Zeraye/chess-analysis-firefox-extension/",
+  "version": "1.7.1",
+  "author": "zeraye",
 
   "icons": {
-    "512": "icons/icon-512.png"
+    "64": "src/icons/addon-icon-64.png"
   },
 
-  "permissions": ["https://www.chess.com/", "https://lichess.org/", "tabs"],
+  "permissions": ["https://www.chess.com/*", "https://lichess.org/*", "tabs"],
 
   "background": {
-    "scripts": ["src/background.js"]
+    "scripts": ["src/js/background.js"]
   },
 
   "content_scripts": [
@@ -20,23 +22,22 @@
       "matches": [
         "https://www.chess.com/game/*",
         "https://www.chess.com/analysis/game/live/*",
-        "https://www.chess.com/analysis/game/daily/*"
+        "https://www.chess.com/analysis/game/daily/*",
+        "https://www.chess.com/analysis/game/computer/*"
       ],
-      "js": ["src/createLoading.js"],
-      "css": ["css/createLoading.css"]
+      "js": ["src/js/createLoading.js"],
+      "css": ["src/css/createLoading.css"]
     }
   ],
 
   "page_action": {
-    "browser_style": true,
-    "default_icon": {
-      "512": "icons/page-action-icon-512.png"
-    },
+    "default_icon": "src/icons/page-action-icon-64.png",
     "default_title": "Analyse game",
     "show_matches": [
       "https://www.chess.com/game/*",
       "https://www.chess.com/analysis/game/live/*",
-      "https://www.chess.com/analysis/game/daily/*"
+      "https://www.chess.com/analysis/game/daily/*",
+      "https://www.chess.com/analysis/game/computer/*"
     ]
   }
 }
