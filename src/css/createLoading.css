@@ -1,0 +1,17 @@
+.cal-loading {
+  font-family: "Montserrat", sans-serif;
+  background: #7fa650;
+  color: #fff;
+  font-size: 2em;
+  position: absolute;
+  display: none;
+  transform: translateX(-50%);
+  left: 50%;
+  line-height: 1;
+  padding: 1em;
+  margin-top: 40vh;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.1rem 0 0 #537133;
+  text-shadow: 0 0.1rem 0 rgba(0, 0, 0, 0.4);
+  z-index: 9999;
+}
