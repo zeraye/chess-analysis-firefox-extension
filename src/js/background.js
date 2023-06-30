@@ -134,7 +134,7 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
       await waitAndClick(".submit", tabId);
 
       /*
-       * Bugfix where status was loading and firefox throwed
+       * Bugfix where status was loading and firefox threw
        * an error about invalid host permissions
        */
       let status = "loading";
