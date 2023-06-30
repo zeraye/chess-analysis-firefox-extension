@@ -24,8 +24,9 @@ const sendLogMessage = async (message, tabId) => {
 const fetchJSON = async (url, tabId) => {
   try {
     const response = await fetch(url);
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error("Error when attempting to fetch resource.");
+    }
     return response.json();
   } catch (error) {
     sendLogMessage(error, tabId);
@@ -109,15 +110,17 @@ const waitForElement = async (
     });
   }
 
-  if (!isElement)
+  if (!isElement) {
     sendLogMessage(`Cannot find \`${querySelector}\` element!`, tabId);
+  }
 
   return isElement;
 };
 
 const waitAndClick = async (querySelector, tabId) => {
-  if (await waitForElement(querySelector, tabId))
+  if (await waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
+  }
 };
 
 const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
@@ -128,7 +131,9 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
   const [loggedIn] = await browser.tabs.executeScript(tabId, {
     code: `!document.querySelector("[name='analyse']").disabled;`,
   });
-  if (loggedIn) await waitAndClick("[name='analyse']", tabId);
+  if (loggedIn) {
+    await waitAndClick("[name='analyse']", tabId);
+  }
 
   if (!(await waitForElement("[name='pgn']", tabId))) {
     return;
@@ -153,7 +158,9 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
     const [localEval] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("#analyse-toggle-ceval").checked;`,
     });
-    if (!localEval) await waitAndClick("[for='analyse-toggle-ceval']", tabId);
+    if (!localEval) {
+      await waitAndClick("[for='analyse-toggle-ceval']", tabId);
+    }
   }
 
   // If the user played as black, flip the board (by opening /black)
@@ -178,7 +185,9 @@ let analysingState = new Set();
 
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
-  if (analysingState.has(tab.id)) return;
+  if (analysingState.has(tab.id)) {
+    return;
+  }
   analysingState.add(tab.id);
 
   try {
