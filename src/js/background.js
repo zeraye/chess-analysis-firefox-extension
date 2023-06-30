@@ -121,45 +121,49 @@ const waitAndClick = async (querySelector, tabId) => {
 };
 
 const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
-  if (await waitForElement("[name='analyse']", tabId)) {
-    const [loggedIn] = await browser.tabs.executeScript(tabId, {
-      code: `!document.querySelector("[name='analyse']").disabled;`,
-    });
-    if (loggedIn) await waitAndClick("[name='analyse']", tabId);
-
-    if (await waitForElement("[name='pgn']", tabId)) {
-      await browser.tabs.executeScript(tabId, {
-        code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
-      });
-      await waitAndClick(".submit", tabId);
-
-      /*
-       * Bugfix where status was loading and firefox threw
-       * an error about invalid host permissions
-       */
-      let status = "loading";
-      while (status === "loading") {
-        const tab = await browser.tabs.get(tabId);
-        status = tab.status;
-      }
-
-      if (await waitForElement("#analyse-toggle-ceval", tabId)) {
-        const [localEval] = await browser.tabs.executeScript(tabId, {
-          code: `document.querySelector("#analyse-toggle-ceval").checked;`,
-        });
-        if (!localEval)
-          await waitAndClick("[for='analyse-toggle-ceval']", tabId);
-      }
-
-      // If the user played as black, flip the board (by opening /black)
-      if (!flipToBlack) {
-        browser.tabs.get(tabId).then((tab) => {
-          const newUrl = tab.url + "/black";
-          browser.tabs.update(tab.id, { url: newUrl });
-        });
-      }
-    }
+  if (!(await waitForElement("[name='analyse']", tabId))) {
+    return;
   }
+
+  const [loggedIn] = await browser.tabs.executeScript(tabId, {
+    code: `!document.querySelector("[name='analyse']").disabled;`,
+  });
+  if (loggedIn) await waitAndClick("[name='analyse']", tabId);
+
+  if (!(await waitForElement("[name='pgn']", tabId))) {
+    return;
+  }
+
+  await browser.tabs.executeScript(tabId, {
+    code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
+  });
+  await waitAndClick(".submit", tabId);
+
+  /*
+   * Bugfix where status was loading and firefox threw
+   * an error about invalid host permissions
+   */
+  let status = "loading";
+  while (status === "loading") {
+    const tab = await browser.tabs.get(tabId);
+    status = tab.status;
+  }
+
+  if (await waitForElement("#analyse-toggle-ceval", tabId)) {
+    const [localEval] = await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector("#analyse-toggle-ceval").checked;`,
+    });
+    if (!localEval) await waitAndClick("[for='analyse-toggle-ceval']", tabId);
+  }
+
+  // If the user played as black, flip the board (by opening /black)
+  if (!flipToBlack) {
+    return;
+  }
+  browser.tabs.get(tabId).then((tab) => {
+    const newUrl = tab.url + "/black";
+    browser.tabs.update(tab.id, { url: newUrl });
+  });
 };
 
 const getBlackPlayer = (pgn) => {
