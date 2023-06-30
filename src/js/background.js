@@ -189,7 +189,7 @@ const analyseGame = async (tab) => {
       code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
     });
 
-    // get logged in user (needed to flip the board if the logged in user is black)
+    /* Get logged in user (needed to flip the board if the logged in user is black) */
     const [loggedInUser] = await browser.tabs
       .executeScript({
         code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
