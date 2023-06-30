@@ -1,15 +1,4 @@
 const setLoadingState = async (active, tabId) => {
-  const [calExist] = await browser.tabs.executeScript(tabId, {
-    code: `document.querySelector(".cal-loading") !== null;`,
-  });
-
-  if (!calExist) {
-    await browser.tabs.executeScript(tabId, {
-      file: "/src/js/createLoading.js",
-    });
-    await browser.tabs.insertCSS(tabId, { file: "/src/css/createLoading.css" });
-  }
-
   await browser.tabs.executeScript(tabId, {
     code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
   });
