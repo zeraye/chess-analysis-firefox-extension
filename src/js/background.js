@@ -213,6 +213,7 @@ const analyseGame = async (tab) => {
     if (!pgn) {
       sendLogMessage(`Game not found!`, tab.id);
       analysingState.delete(tab.id);
+      return;
     }
 
     let lichessTab = await browser.tabs.create({
