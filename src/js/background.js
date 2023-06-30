@@ -174,19 +174,13 @@ const getBlackPlayer = (pgn) => {
   return match && match.length > 1 ? match[1] : null;
 };
 
-/*
- * Structure:
- * {
- *   tabId0: bool,
- *   tabId1: bool
- * }
- */
-let analysingState = {};
+/* Set of tabIds that are in analysing state */
+let analysingState = new Set();
 
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
-  if (analysingState[tab.id]) return;
-  analysingState[tab.id] = true;
+  if (analysingState.has(tab.id)) return;
+  analysingState.add(tab.id);
 
   try {
     await setLoadingState(true, tab.id);
@@ -218,7 +212,7 @@ const analyseGame = async (tab) => {
 
     if (!pgn) {
       sendLogMessage(`Game not found!`, tab.id);
-      analysingState[tab.id] = false;
+      analysingState.delete(tab.id);
     }
 
     let lichessTab = await browser.tabs.create({
@@ -238,7 +232,7 @@ const analyseGame = async (tab) => {
   } catch (error) {
     sendLogMessage(error, tab.id);
   } finally {
-    analysingState[tab.id] = false;
+    analysingState.delete(tab.id);
   }
 };
 
