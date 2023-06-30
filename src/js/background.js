@@ -139,8 +139,8 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
        */
       let status = "loading";
       while (status === "loading") {
-        let getting = await browser.tabs.get(tabId);
-        status = getting.status;
+        const tab = await browser.tabs.get(tabId);
+        status = tab.status;
       }
 
       if (await waitForElement("#analyse-toggle-ceval", tabId)) {
