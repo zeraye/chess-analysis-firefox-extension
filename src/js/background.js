@@ -153,13 +153,15 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
 
       // If the user played as black, flip the board (by opening /black)
       if (flipToBlack) {
-        browser.tabs.get(tabId).then((tab) => {
-          const newUrl = tab.url + "/black";
-          browser.tabs.update(tab.id, { url: newUrl });
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+        browser.tabs
+          .get(tabId)
+          .then((tab) => {
+            const newUrl = tab.url + "/black";
+            browser.tabs.update(tab.id, { url: newUrl });
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
       }
     }
   }
@@ -169,8 +171,8 @@ const getBlackPlayer = (pgn) => {
   const blackPlayerRegex = /\[Black\s+"([^"]+)"\]/;
   const match = pgn.match(blackPlayerRegex);
 
-  return (match && match.length > 1) ? match[1] : null;
-}
+  return match && match.length > 1 ? match[1] : null;
+};
 
 /*
  * Structure:
@@ -194,9 +196,11 @@ const analyseGame = async (tab) => {
     });
 
     // get logged in user (needed to flip the board if the logged in user is black)
-    const [loggedInUser] = await browser.tabs.executeScript({
-      code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
-    }).catch(console.error);
+    const [loggedInUser] = await browser.tabs
+      .executeScript({
+        code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
+      })
+      .catch(console.error);
 
     const gameId = tab.url.split("?")[0];
 
@@ -220,7 +224,11 @@ const analyseGame = async (tab) => {
     let lichessTab = await browser.tabs.create({
       url: "https://lichess.org/paste",
     });
-    await lichessAnalyse(lichessTab.id, pgn, getBlackPlayer(pgn) === loggedInUser);
+    await lichessAnalyse(
+      lichessTab.id,
+      pgn,
+      getBlackPlayer(pgn) === loggedInUser
+    );
   } catch (error) {
     sendLogMessage(error, tab.id);
   }
