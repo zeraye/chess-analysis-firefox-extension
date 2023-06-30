@@ -152,16 +152,11 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
       }
 
       // If the user played as black, flip the board (by opening /black)
-      if (flipToBlack) {
-        browser.tabs
-          .get(tabId)
-          .then((tab) => {
-            const newUrl = tab.url + "/black";
-            browser.tabs.update(tab.id, { url: newUrl });
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-          });
+      if (!flipToBlack) {
+        browser.tabs.get(tabId).then((tab) => {
+          const newUrl = tab.url + "/black";
+          browser.tabs.update(tab.id, { url: newUrl });
+        });
       }
     }
   }
@@ -190,11 +185,9 @@ const analyseGame = async (tab) => {
     });
 
     /* Get logged in user (needed to flip the board if the logged in user is black) */
-    const [loggedInUser] = await browser.tabs
-      .executeScript({
-        code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
-      })
-      .catch(console.error);
+    const [loggedInUser] = await browser.tabs.executeScript({
+      code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
+    });
 
     const gameId = tab.url.split("?")[0];
 
