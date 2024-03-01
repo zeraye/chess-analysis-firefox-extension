@@ -189,18 +189,13 @@ const analyseGame = async (tab) => {
   try {
     await setLoadingState(true, tab.id);
 
-    const [playerName] = await browser.tabs.executeScript(tab.id, {
-      code: `document.querySelector('[data-test-element="user-tagline-username"]').textContent;`,
+    const [topPlayerName] = await browser.tabs.executeScript(tab.id, {
+      code: `document.querySelector('.user-username-component').textContent;`,
     });
-
-    // get logged in user (needed to flip the board if the logged in user is black)
-    const [loggedInUser] = await browser.tabs.executeScript({
-      code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
-    }).catch(console.error);
 
     const gameId = tab.url.split("?")[0];
 
-    let pgn = await getPGN(playerName, gameId, tab.id);
+    let pgn = await getPGN(topPlayerName, gameId, tab.id);
 
     await setLoadingState(false, tab.id);
 
@@ -220,7 +215,7 @@ const analyseGame = async (tab) => {
     let lichessTab = await browser.tabs.create({
       url: "https://lichess.org/paste",
     });
-    await lichessAnalyse(lichessTab.id, pgn, getBlackPlayer(pgn) === loggedInUser);
+    await lichessAnalyse(lichessTab.id, pgn, getBlackPlayer(pgn) !== topPlayerName);
   } catch (error) {
     sendLogMessage(error, tab.id);
   }
