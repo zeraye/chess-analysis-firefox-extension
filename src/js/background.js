@@ -100,7 +100,7 @@ const getPGNManual = async (tabId) => {
   await waitAndClick(".board-tab-item-underlined-component");
   await waitAndClick(".share-menu-tab-pgn-toggle");
 
-  if (await waitForElement("[name='pgn']", tabId)) {
+  if (waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
@@ -162,7 +162,7 @@ const waitForElement = async (
  * @param {number} tabId
  */
 const waitAndClick = async (querySelector, tabId) => {
-  if (await waitForElement(querySelector, tabId)) {
+  if (waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
   }
 };
@@ -175,7 +175,7 @@ const waitAndClick = async (querySelector, tabId) => {
  * @returns
  */
 const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
-  if (!(await waitForElement("[name='analyse']", tabId))) {
+  if (!waitForElement("[name='analyse']", tabId)) {
     return;
   }
 
@@ -186,7 +186,7 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
     await waitAndClick("[name='analyse']", tabId);
   }
 
-  if (!(await waitForElement("[name='pgn']", tabId))) {
+  if (!waitForElement("[name='pgn']", tabId)) {
     return;
   }
 
@@ -204,7 +204,7 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
     status = (await browser.tabs.get(tabId)).status;
   }
 
-  if (await waitForElement("#analyse-toggle-ceval", tabId)) {
+  if (waitForElement("#analyse-toggle-ceval", tabId)) {
     const [localEval] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("#analyse-toggle-ceval").checked;`,
     });
@@ -277,7 +277,7 @@ const analyseGame = async (tab) => {
     let pgn = null;
 
     if (gameId) {
-      pgn = await getPGN(topPlayerName, gameId, tab.id);
+      pgn = getPGN(topPlayerName, gameId, tab.id);
     }
 
     await setLoadingState(false, tab.id);
@@ -287,7 +287,7 @@ const analyseGame = async (tab) => {
         `Game with id ${gameId} not found! Performing manual fetching.`,
         tab.id
       );
-      pgn = await getPGNManual(tab.id);
+      pgn = getPGNManual(tab.id);
     }
 
     if (!pgn) {
