@@ -66,6 +66,7 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
      * games. You will probably make less fetches
      */
     for (let i = archives.length - 1; i >= 0; i--) {
+      /* TODO: fetch all archives async to reduce time, waiting for response */
       const games = (await fetchJSON(archives[i], tabId)).games;
       for (let j = games.length - 1; j >= 0; j--) {
         if (extractGameId(games[j].url) === gameId) {
