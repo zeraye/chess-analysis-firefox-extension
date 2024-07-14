@@ -1,15 +1,31 @@
+/**
+ * Manage displaying loading animation.
+ * @param {boolean} active
+ * @param {number} tabId
+ */
 const setLoadingState = async (active, tabId) => {
   await browser.tabs.executeScript(tabId, {
     code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
   });
 };
 
+/**
+ * Send logs to browser console.
+ * @param {string} message
+ * @param {number} tabId
+ */
 const sendLogMessage = async (message, tabId) => {
   await browser.tabs.executeScript(tabId, {
     code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
   });
 };
 
+/**
+ * Wrapper for fetch api with error support.
+ * @param {string} url
+ * @param {number} tabId
+ * @returns {Promise<any>|null}
+ */
 const fetchJSON = async (url, tabId) => {
   try {
     const response = await fetch(url);
@@ -23,10 +39,15 @@ const fetchJSON = async (url, tabId) => {
   }
 };
 
-/*
- * Portable Game Notation (PGN) is a standard plain text format for
- * recording chess games, which can be read by humans and is also
- * supported by most chess software
+/**
+ * Portable Game Notation (PGN) is a standard plain text format
+ * for recording chess games, which can be read by humans
+ * and is also supported by most chess software.
+ * Try to get gamePGN by searching all player's games.
+ * @param {string} playerName
+ * @param {string} gameUrl
+ * @param {number} tabId
+ * @returns {string|null}
  */
 const getPGN = async (playerName, gameUrl, tabId) => {
   try {
@@ -58,6 +79,15 @@ const getPGN = async (playerName, gameUrl, tabId) => {
   return null;
 };
 
+/**
+ * Portable Game Notation (PGN) is a standard plain text format
+ * for recording chess games, which can be read by humans
+ * and is also supported by most chess software.
+ * Try to get gamePGN by opening share element on the page.
+ * This should be user after `getPGN()` fails.
+ * @param {number} tabId
+ * @returns {string|null}
+ */
 const getPGNManual = async (tabId) => {
   await waitAndClick(".share");
   await waitAndClick(".board-tab-item-underlined-component");
@@ -75,12 +105,25 @@ const getPGNManual = async (tabId) => {
   return null;
 };
 
+/**
+ * Click element on the page.
+ * @param {string} querySelector
+ * @param {number} tabId
+ */
 const clickElement = async (querySelector, tabId) => {
   await browser.tabs.executeScript(tabId, {
     code: `document.querySelector("${querySelector}").click();`,
   });
 };
 
+/**
+ * Wait for element to appear on the page.
+ * @param {string} querySelector
+ * @param {number} tabId
+ * @param {number} timeLeft
+ * @param {number} retryDelay
+ * @returns {boolean|null}
+ */
 const waitForElement = async (
   querySelector,
   tabId,
@@ -106,12 +149,24 @@ const waitForElement = async (
   return isElement;
 };
 
+/**
+ * Wait for element and click on it when found
+ * @param {string} querySelector
+ * @param {number} tabId
+ */
 const waitAndClick = async (querySelector, tabId) => {
   if (await waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
   }
 };
 
+/**
+ * Analyse PGN on the lichess page.
+ * @param {number} tabId
+ * @param {string} pgn
+ * @param {boolean} flipToBlack
+ * @returns
+ */
 const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
   if (!(await waitForElement("[name='analyse']", tabId))) {
     return;
@@ -161,6 +216,11 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
   });
 };
 
+/**
+ * Get black player username.
+ * @param {string} pgn
+ * @returns {string|null}
+ */
 const getBlackPlayer = (pgn) => {
   const blackPlayerRegex = /\[Black\s+"([^"]+)"\]/;
   const match = pgn.match(blackPlayerRegex);
@@ -168,9 +228,17 @@ const getBlackPlayer = (pgn) => {
   return match && match.length > 1 ? match[1] : null;
 };
 
-/* Set of tabIds that are in analysing state */
+/**
+ * Set of tabIds that are in analysing state
+ * @type {Set<boolean,number>}
+ */
 let analysingState = new Set();
 
+/**
+ * Get chess.com game and analyse in on lichess.
+ * @param {number} tab
+ * @returns {void}
+ */
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
   if (analysingState.has(tab.id)) {
