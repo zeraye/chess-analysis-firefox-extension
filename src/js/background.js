@@ -272,11 +272,6 @@ const analyseGame = async (tab) => {
       code: `document.querySelector('.user-username-component').textContent;`,
     });
 
-    /* Get logged in user (needed to flip the board if the logged in user is black) */
-    const [loggedInUser] = await browser.tabs.executeScript({
-      code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
-    });
-
     const gameURL = tab.url.split("?")[0];
     const gameId = extractGameId(gameURL);
     let pgn = null;
@@ -307,7 +302,7 @@ const analyseGame = async (tab) => {
     await lichessAnalyse(
       lichessTab.id,
       pgn,
-      getBlackPlayer(pgn) === loggedInUser
+      getBlackPlayer(pgn) !== topPlayerName
     );
   } catch (error) {
     sendLogMessage(error, tab.id);
