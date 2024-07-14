@@ -47,9 +47,11 @@ const fetchJSON = async (url, tabId) => {
  * @param {string} playerName
  * @param {string} gameId
  * @param {number} tabId
+ * @param {number} timeLimit
  * @returns {string|null}
  */
-const getPGN = async (playerName, gameId, tabId) => {
+const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
+  const startTime = +new Date();
   try {
     const archives = (
       await fetchJSON(
@@ -69,6 +71,10 @@ const getPGN = async (playerName, gameId, tabId) => {
         if (extractGameId(games[j].url) === gameId) {
           return games[j].pgn;
         }
+      }
+      const currentTime = +new Date();
+      if (currentTime - startTime > timeLimit) {
+        throw new Error("Exceeded time limit!");
       }
     }
   } catch (error) {
