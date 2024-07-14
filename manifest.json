@@ -4,7 +4,7 @@
   "name": "Chess.com analyse at lichess",
   "description": "Analyse chess.com game at lichess.org for free.",
   "homepage_url": "https://github.com/Zeraye/chess-analysis-firefox-extension/",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "author": "zeraye",
 
   "icons": {
