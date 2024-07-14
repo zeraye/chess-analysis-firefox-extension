@@ -45,11 +45,11 @@ const fetchJSON = async (url, tabId) => {
  * and is also supported by most chess software.
  * Try to get gamePGN by searching all player's games.
  * @param {string} playerName
- * @param {string} gameUrl
+ * @param {string} gameId
  * @param {number} tabId
  * @returns {string|null}
  */
-const getPGN = async (playerName, gameUrl, tabId) => {
+const getPGN = async (playerName, gameId, tabId) => {
   try {
     const archives = (
       await fetchJSON(
@@ -66,7 +66,7 @@ const getPGN = async (playerName, gameUrl, tabId) => {
     for (let i = archives.length - 1; i >= 0; i--) {
       const games = (await fetchJSON(archives[i], tabId)).games;
       for (let j = games.length - 1; j >= 0; j--) {
-        if (games[j].url === gameUrl) {
+        if (extractGameId(games[j].url) === gameId) {
           return games[j].pgn;
         }
       }
@@ -217,6 +217,18 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
 };
 
 /**
+ * Extract the game ID using the regex for URL.
+ * @param {string} url
+ * @returns {number|null}
+ */
+const extractGameId = (url) => {
+  /* Regular expression to match the game ID */
+  const regex = /https?:\/\/(?:[^./?#]+\.)*chess\.com\/(?:[^./?#]+\/)*(\d+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+};
+
+/**
  * Get black player username.
  * @param {string} pgn
  * @returns {string|null}
@@ -258,9 +270,13 @@ const analyseGame = async (tab) => {
       code: `document.getElementById('notifications-request')?.getAttribute("username") || null;`,
     });
 
-    const gameId = tab.url.split("?")[0];
+    const gameURL = tab.url.split("?")[0];
+    const gameId = extractGameId(gameURL);
+    let pgn = null;
 
-    let pgn = await getPGN(topPlayerName, gameId, tab.id);
+    if (gameId) {
+      pgn = await getPGN(topPlayerName, gameId, tab.id);
+    }
 
     await setLoadingState(false, tab.id);
 
