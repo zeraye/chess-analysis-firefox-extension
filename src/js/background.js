@@ -275,7 +275,7 @@ const analyseGame = async (tab) => {
     let pgn = null;
 
     if (gameId) {
-      pgn = getPGN(topPlayerName, gameId, tab.id);
+      pgn = await getPGN(topPlayerName, gameId, tab.id);
     }
 
     await setLoadingState(false, tab.id);
@@ -285,7 +285,7 @@ const analyseGame = async (tab) => {
         `Game with id ${gameId} not found! Performing manual fetching.`,
         tab.id
       );
-      pgn = getPGNManual(tab.id);
+      pgn = await getPGNManual(tab.id);
     }
 
     if (!pgn) {
