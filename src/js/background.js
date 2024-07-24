@@ -1,31 +1,37 @@
+/**
+ * Manage displaying loading animation.
+ * @param {boolean} active
+ * @param {number} tabId
+ */
 const setLoadingState = async (active, tabId) => {
-  const [calExist] = await browser.tabs.executeScript(tabId, {
-    code: `document.querySelector(".cal-loading") !== null;`,
-  });
-
-  if (!calExist) {
-    await browser.tabs.executeScript(tabId, {
-      file: "/src/js/createLoading.js",
-    });
-    await browser.tabs.insertCSS(tabId, { file: "/src/css/createLoading.css" });
-  }
-
   await browser.tabs.executeScript(tabId, {
     code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
   });
 };
 
+/**
+ * Send logs to browser console.
+ * @param {string} message
+ * @param {number} tabId
+ */
 const sendLogMessage = async (message, tabId) => {
   await browser.tabs.executeScript(tabId, {
     code: `console.log("[Chess.com analyse at lichess]: ${message}");`,
   });
 };
 
+/**
+ * Wrapper for fetch api with error support.
+ * @param {string} url
+ * @param {number} tabId
+ * @returns {Promise<any>|null}
+ */
 const fetchJSON = async (url, tabId) => {
   try {
     const response = await fetch(url);
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error("Error when attempting to fetch resource.");
+    }
     return response.json();
   } catch (error) {
     sendLogMessage(error, tabId);
@@ -33,12 +39,19 @@ const fetchJSON = async (url, tabId) => {
   }
 };
 
-/*
- * Portable Game Notation (PGN) is a standard plain text format for
- * recording chess games, which can be read by humans and is also
- * supported by most chess software
+/**
+ * Portable Game Notation (PGN) is a standard plain text format
+ * for recording chess games, which can be read by humans
+ * and is also supported by most chess software.
+ * Try to get gamePGN by searching all player's games.
+ * @param {string} playerName
+ * @param {string} gameId
+ * @param {number} tabId
+ * @param {number} timeLimit
+ * @returns {Promise<string>|null}
  */
-const getPGN = async (playerName, gameUrl, tabId) => {
+const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
+  const startTime = +new Date();
   try {
     const archives = (
       await fetchJSON(
@@ -53,11 +66,16 @@ const getPGN = async (playerName, gameUrl, tabId) => {
      * games. You will probably make less fetches
      */
     for (let i = archives.length - 1; i >= 0; i--) {
+      /* TODO: fetch all archives async to reduce time, waiting for response */
       const games = (await fetchJSON(archives[i], tabId)).games;
       for (let j = games.length - 1; j >= 0; j--) {
-        if (games[j].url === gameUrl) {
+        if (extractGameId(games[j].url) === gameId) {
           return games[j].pgn;
         }
+      }
+      const currentTime = +new Date();
+      if (currentTime - startTime > timeLimit) {
+        throw new Error("Exceeded time limit!");
       }
     }
   } catch (error) {
@@ -68,12 +86,21 @@ const getPGN = async (playerName, gameUrl, tabId) => {
   return null;
 };
 
+/**
+ * Portable Game Notation (PGN) is a standard plain text format
+ * for recording chess games, which can be read by humans
+ * and is also supported by most chess software.
+ * Try to get gamePGN by opening share element on the page.
+ * This should be user after `getPGN()` fails.
+ * @param {number} tabId
+ * @returns {Promise<string>|null}
+ */
 const getPGNManual = async (tabId) => {
   await waitAndClick(".share");
   await waitAndClick(".board-tab-item-underlined-component");
   await waitAndClick(".share-menu-tab-pgn-toggle");
 
-  if (await waitForElement("[name='pgn']")) {
+  if (waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
@@ -85,12 +112,25 @@ const getPGNManual = async (tabId) => {
   return null;
 };
 
+/**
+ * Click element on the page.
+ * @param {string} querySelector
+ * @param {number} tabId
+ */
 const clickElement = async (querySelector, tabId) => {
   await browser.tabs.executeScript(tabId, {
     code: `document.querySelector("${querySelector}").click();`,
   });
 };
 
+/**
+ * Wait for element to appear on the page.
+ * @param {string} querySelector
+ * @param {number} tabId
+ * @param {number} timeLeft
+ * @param {number} retryDelay
+ * @returns {Promise<boolean>|null}
+ */
 const waitForElement = async (
   querySelector,
   tabId,
@@ -109,82 +149,119 @@ const waitForElement = async (
     });
   }
 
-  if (!isElement)
+  if (!isElement) {
     sendLogMessage(`Cannot find \`${querySelector}\` element!`, tabId);
+  }
 
   return isElement;
 };
 
+/**
+ * Wait for element and click on it when found
+ * @param {string} querySelector
+ * @param {number} tabId
+ */
 const waitAndClick = async (querySelector, tabId) => {
-  if (await waitForElement(querySelector, tabId))
+  if (waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
-};
-
-const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
-  if (await waitForElement("[name='analyse']", tabId)) {
-    const [loggedIn] = await browser.tabs.executeScript(tabId, {
-      code: `!document.querySelector("[name='analyse']").disabled;`,
-    });
-    if (loggedIn) await waitAndClick("[name='analyse']", tabId);
-
-    if (await waitForElement("[name='pgn']", tabId)) {
-      await browser.tabs.executeScript(tabId, {
-        code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
-      });
-      await waitAndClick(".submit", tabId);
-
-      /*
-       * Bugfix where status was loading and firefox throwed
-       * an error about invalid host permissions
-       */
-      let status = "loading";
-      while (status === "loading") {
-        let getting = await browser.tabs.get(tabId);
-        status = getting.status;
-      }
-
-      if (await waitForElement("#analyse-toggle-ceval", tabId)) {
-        const [localEval] = await browser.tabs.executeScript(tabId, {
-          code: `document.querySelector("#analyse-toggle-ceval").checked;`,
-        });
-        if (!localEval)
-          await waitAndClick("[for='analyse-toggle-ceval']", tabId);
-      }
-
-      // If the user played as black, flip the board (by opening /black)
-      if (flipToBlack) {
-        browser.tabs.get(tabId).then((tab) => {
-          const newUrl = tab.url + "/black";
-          browser.tabs.update(tab.id, { url: newUrl });
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
-      }
-    }
   }
 };
 
+/**
+ * Analyse PGN on the lichess page.
+ * @param {number} tabId
+ * @param {string} pgn
+ * @param {boolean} flipToBlack
+ */
+const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
+  if (!waitForElement("[name='analyse']", tabId)) {
+    return;
+  }
+
+  const [loggedIn] = await browser.tabs.executeScript(tabId, {
+    code: `!document.querySelector("[name='analyse']").disabled;`,
+  });
+  if (loggedIn) {
+    await waitAndClick("[name='analyse']", tabId);
+  }
+
+  if (!waitForElement("[name='pgn']", tabId)) {
+    return;
+  }
+
+  await browser.tabs.executeScript(tabId, {
+    code: `document.querySelector("[name='pgn']").value = \`${pgn}\`;`,
+  });
+  await waitAndClick(".submit", tabId);
+
+  /*
+   * Bugfix where status was loading and firefox threw
+   * an error about invalid host permissions
+   */
+  let status = "loading";
+  while (status === "loading") {
+    status = (await browser.tabs.get(tabId)).status;
+  }
+
+  if (waitForElement("#analyse-toggle-ceval", tabId)) {
+    const [localEval] = await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector("#analyse-toggle-ceval").checked;`,
+    });
+    if (!localEval) {
+      await waitAndClick("[for='analyse-toggle-ceval']", tabId);
+    }
+  }
+
+  // If the user played as black, flip the board (by opening /black)
+  if (!flipToBlack) {
+    return;
+  }
+  browser.tabs.get(tabId).then((tab) => {
+    const newUrl = tab.url + "/black";
+    browser.tabs.update(tab.id, { url: newUrl });
+  });
+};
+
+/**
+ * Extract the game ID using the regex for URL.
+ * @param {string} url
+ * @returns {number|null}
+ */
+const extractGameId = (url) => {
+  /* Regular expression to match the game ID */
+  const regex = /https?:\/\/(?:[^./?#]+\.)*chess\.com\/(?:[^./?#]+\/)*(\d+)/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+};
+
+/**
+ * Get black player username.
+ * @param {string} pgn
+ * @returns {string|null}
+ */
 const getBlackPlayer = (pgn) => {
   const blackPlayerRegex = /\[Black\s+"([^"]+)"\]/;
   const match = pgn.match(blackPlayerRegex);
 
-  return (match && match.length > 1) ? match[1] : null;
-}
+  return match && match.length > 1 ? match[1] : null;
+};
 
-/*
- * Structure:
- * {
- *   tabId0: bool,
- *   tabId1: bool
- * }
+/**
+ * Set of tabIds that are in analysing state
+ * @type {Set<boolean,number>}
  */
-let analysingState = {};
+let analysingState = new Set();
 
+/**
+ * Get chess.com game and analyse in on lichess.
+ * @param {number} tab
+ */
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
-  if (analysingState[tab.id]) return;
-  analysingState[tab.id] = true;
+  if (analysingState.has(tab.id)) {
+    return;
+  }
+  analysingState.add(tab.id);
 
   try {
     await setLoadingState(true, tab.id);
@@ -193,9 +270,13 @@ const analyseGame = async (tab) => {
       code: `document.querySelector('.user-username-component').textContent;`,
     });
 
-    const gameId = tab.url.split("?")[0];
+    const gameURL = tab.url.split("?")[0];
+    const gameId = extractGameId(gameURL);
+    let pgn = null;
 
-    let pgn = await getPGN(topPlayerName, gameId, tab.id);
+    if (gameId) {
+      pgn = await getPGN(topPlayerName, gameId, tab.id);
+    }
 
     await setLoadingState(false, tab.id);
 
@@ -209,13 +290,18 @@ const analyseGame = async (tab) => {
 
     if (!pgn) {
       sendLogMessage(`Game not found!`, tab.id);
-      analysingState[tab.id] = false;
+      analysingState.delete(tab.id);
+      return;
     }
 
     let lichessTab = await browser.tabs.create({
       url: "https://lichess.org/paste",
     });
-    await lichessAnalyse(lichessTab.id, pgn, getBlackPlayer(pgn) !== topPlayerName);
+    await lichessAnalyse(
+      lichessTab.id,
+      pgn,
+      getBlackPlayer(pgn) !== topPlayerName
+    );
   } catch (error) {
     sendLogMessage(error, tab.id);
   }
@@ -225,7 +311,7 @@ const analyseGame = async (tab) => {
   } catch (error) {
     sendLogMessage(error, tab.id);
   } finally {
-    analysingState[tab.id] = false;
+    analysingState.delete(tab.id);
   }
 };
 
