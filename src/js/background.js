@@ -48,7 +48,7 @@ const fetchJSON = async (url, tabId) => {
  * @param {string} gameId
  * @param {number} tabId
  * @param {number} timeLimit
- * @returns {string|null}
+ * @returns {Promise<string>|null}
  */
 const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
   const startTime = +new Date();
@@ -93,7 +93,7 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
  * Try to get gamePGN by opening share element on the page.
  * This should be user after `getPGN()` fails.
  * @param {number} tabId
- * @returns {string|null}
+ * @returns {Promise<string>|null}
  */
 const getPGNManual = async (tabId) => {
   await waitAndClick(".share");
@@ -129,7 +129,7 @@ const clickElement = async (querySelector, tabId) => {
  * @param {number} tabId
  * @param {number} timeLeft
  * @param {number} retryDelay
- * @returns {boolean|null}
+ * @returns {Promise<boolean>|null}
  */
 const waitForElement = async (
   querySelector,
@@ -172,7 +172,6 @@ const waitAndClick = async (querySelector, tabId) => {
  * @param {number} tabId
  * @param {string} pgn
  * @param {boolean} flipToBlack
- * @returns
  */
 const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
   if (!waitForElement("[name='analyse']", tabId)) {
@@ -256,7 +255,6 @@ let analysingState = new Set();
 /**
  * Get chess.com game and analyse in on lichess.
  * @param {number} tab
- * @returns {void}
  */
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
