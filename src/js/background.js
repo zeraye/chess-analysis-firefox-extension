@@ -50,7 +50,7 @@ const fetchJSON = async (url, tabId) => {
  * @param {number} timeLimit
  * @returns {Promise<string>|null}
  */
-const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
+const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
   const startTime = +new Date();
   try {
     const archives = (
