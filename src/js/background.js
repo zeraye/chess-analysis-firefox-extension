@@ -162,7 +162,7 @@ const waitForElement = async (
  * @param {number} tabId
  */
 const waitAndClick = async (querySelector, tabId) => {
-  if (waitForElement(querySelector, tabId)) {
+  if (await waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
   }
 };
