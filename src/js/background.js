@@ -50,7 +50,7 @@ const fetchJSON = async (url, tabId) => {
  * @param {number} timeLimit
  * @returns {Promise<string>|null}
  */
-const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
+const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
   const startTime = +new Date();
   try {
     const archives = (
@@ -96,15 +96,20 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 5000) => {
  * @returns {Promise<string>|null}
  */
 const getPGNManual = async (tabId) => {
-  await waitAndClick(".share");
-  await waitAndClick(".board-tab-item-underlined-component");
-  await waitAndClick(".share-menu-tab-pgn-toggle");
+  await waitAndClick(".share", tabId);
+  await waitAndClick(".board-tab-item-underlined-component", tabId);
 
-  if (waitForElement("[name='pgn']", tabId)) {
+  if (await waitForElement(".share-menu-tab-pgn-toggle", tabId)) {
+    await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector(".share-menu-tab-pgn-toggle input").checked = true;`,
+    });
+  }
+
+  if (await waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
-    await waitAndClick("[data-cy='share-menu-close']");
+    await waitAndClick(".ui_outside-close-component", tabId);
 
     return pgn;
   }
@@ -162,7 +167,7 @@ const waitForElement = async (
  * @param {number} tabId
  */
 const waitAndClick = async (querySelector, tabId) => {
-  if (waitForElement(querySelector, tabId)) {
+  if (await waitForElement(querySelector, tabId)) {
     await clickElement(querySelector, tabId);
   }
 };
