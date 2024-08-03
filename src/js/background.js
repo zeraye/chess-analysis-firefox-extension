@@ -104,7 +104,7 @@ const getPGNManual = async (tabId) => {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
-    await waitAndClick("[data-cy='share-menu-close']");
+    await waitAndClick(".ui_outside-close-component", tabId);
 
     return pgn;
   }
