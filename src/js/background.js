@@ -96,9 +96,8 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
  * @returns {Promise<string>|null}
  */
 const getPGNManual = async (tabId) => {
-  await waitAndClick(".share");
-  await waitAndClick(".board-tab-item-underlined-component");
-  await waitAndClick(".share-menu-tab-pgn-toggle");
+  await waitAndClick(".share", tabId);
+  await waitAndClick(".board-tab-item-underlined-component", tabId);
 
   if (await waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
