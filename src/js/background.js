@@ -100,7 +100,7 @@ const getPGNManual = async (tabId) => {
   await waitAndClick(".board-tab-item-underlined-component");
   await waitAndClick(".share-menu-tab-pgn-toggle");
 
-  if (waitForElement("[name='pgn']", tabId)) {
+  if (await waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
