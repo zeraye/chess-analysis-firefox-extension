@@ -4,9 +4,12 @@
  * @param {number} tabId
  */
 const setLoadingState = async (active, tabId) => {
-  await browser.tabs.executeScript(tabId, {
-    code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
-  });
+  // Sometimes content_script won't load at all. Omit all errors that uses loading div (.cal-loading)
+  try {
+    await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector(".cal-loading").style.display = ${active} ? "flex" : "none";`,
+    });
+  } catch {}
 };
 
 /**
