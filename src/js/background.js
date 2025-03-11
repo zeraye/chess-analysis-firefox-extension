@@ -258,7 +258,7 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
 /**
  * Extract the game ID using the regex for URL.
  * @param {string} url
- * @returns {number|null}
+ * @returns {string|null}
  */
 const extractGameId = (url) => {
   /* Regular expression to match the game ID */
@@ -311,7 +311,7 @@ let analysingState = new Set();
 
 /**
  * Get chess.com game and analyse in on lichess.
- * @param {number} tab
+ * @param {object} tab
  */
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
