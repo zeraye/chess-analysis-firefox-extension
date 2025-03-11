@@ -51,9 +51,16 @@ const fetchJSON = async (url, tabId) => {
  * @param {string} gameId
  * @param {number} tabId
  * @param {number} timeLimit
+ * @param {number} prefetchSize
  * @returns {Promise<string>|null}
  */
-const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
+const getPGN = async (
+  playerName,
+  gameId,
+  tabId,
+  timeLimit = 3000,
+  prefetchSize = 3
+) => {
   const startTime = +new Date();
   try {
     const archives = (
@@ -64,29 +71,47 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
     ).archives;
     /*
      * Archives are given from the oldest to the most recet games.
-     * Thus iterating from the last one (the most recent) is usually
-     * better, because players usually want to analyse their most recent
-     * games. You will probably make less fetches
+     * Thus iterating from the last one (the most recent) is usually better,
+     * because players usually want to analyse their most recent games.
+     * Probably, you will find wanted game within last N game archives.
      */
-    for (let i = archives.length - 1; i >= 0; i--) {
-      /* TODO: fetch all archives async to reduce time, waiting for response */
-      const games = (await fetchJSON(archives[i], tabId)).games;
-      for (let j = games.length - 1; j >= 0; j--) {
-        if (extractGameId(games[j].url) === gameId) {
-          return games[j].pgn;
-        }
-      }
-      const currentTime = +new Date();
-      if (currentTime - startTime > timeLimit) {
-        throw new Error("Exceeded time limit!");
-      }
+    const gameArchivesFetchesLastN = archives
+      .slice(-prefetchSize)
+      .map((url) => fetchJSON(url, tabId));
+    const gameArchivesFetchesRest = archives
+      .slice(0, -prefetchSize)
+      .map((url) => fetchJSON(url, tabId));
+
+    /*
+     * Try to find the game within last N game archives.
+     */
+    const gameArchivesLastN = await Promise.all(gameArchivesFetchesLastN);
+    let pgn = findGameInGameArchives(
+      gameArchivesLastN,
+      gameId,
+      startTime,
+      timeLimit
+    );
+    if (pgn) {
+      return pgn;
     }
+
+    /*
+     * Wanted game wasn't within last N game archives.
+     * Search the rest of the game archives.
+     */
+    const gameArchivesRest = await Promise.all(gameArchivesFetchesRest);
+    pgn = findGameInGameArchives(
+      gameArchivesRest,
+      gameId,
+      startTime,
+      timeLimit
+    );
+    return pgn;
   } catch (error) {
     sendLogMessage(error, tabId);
     return null;
   }
-
-  return null;
 };
 
 /**
@@ -240,6 +265,30 @@ const extractGameId = (url) => {
   const regex = /https?:\/\/(?:[^./?#]+\.)*chess\.com\/(?:[^./?#]+\/)*(\d+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
+};
+
+/**
+ * Find game by ID in the game archives.
+ * @param {object} gameArchives
+ * @param {string} gameId
+ * @param {number} startTime
+ * @param {number} timeLimit
+ * @returns {string|null}
+ */
+const findGameInGameArchives = (gameArchives, gameId, startTime, timeLimit) => {
+  for (let i = 0; i < gameArchives.length; i++) {
+    const games = gameArchives[i].games;
+    for (let j = 0; j < games.length; j++) {
+      if (extractGameId(games[j].url) === gameId) {
+        return games[j].pgn;
+      }
+    }
+    const currentTime = +new Date();
+    if (currentTime - startTime > timeLimit) {
+      throw new Error("Exceeded time limit!");
+    }
+  }
+  return null;
 };
 
 /**
