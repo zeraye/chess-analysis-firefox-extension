@@ -137,7 +137,7 @@ const getPGNManual = async (tabId) => {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
-    await waitAndClick(".ui_outside-close-component", tabId);
+    await waitAndClick(".outside-close-component", tabId);
 
     return pgn;
   }
@@ -323,15 +323,25 @@ const analyseGame = async (tab) => {
   try {
     await setLoadingState(true, tab.id);
 
-    const [topPlayerName] = await browser.tabs.executeScript(tab.id, {
-      code: `document.querySelector('.user-username-component').textContent;`,
-    });
+    /*
+     * Sometimes it's not possible to get player name (e.g. events).
+     * In such scenarions don't exit, try to analyse the game anyway.
+     * You will have to get PGN manually and won't know which player is black.
+     */
+    let topPlayerName = null;
+    try {
+      [topPlayerName] = await browser.tabs.executeScript(tab.id, {
+        code: `document.querySelector(".player-tagline [data-test-element='user-tagline-username']").textContent;`,
+      });
+    } catch (error) {
+      sendLogMessage(error, tab.id);
+    }
 
     const gameURL = tab.url.split("?")[0];
     const gameId = extractGameId(gameURL);
     let pgn = null;
 
-    if (gameId) {
+    if (gameId && topPlayerName) {
       pgn = await getPGN(topPlayerName, gameId, tab.id);
     }
 
