@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"]
+  },
+  "typeAcquisition": {
+    "include": ["firefox-webext-browser"]
+  }
+}

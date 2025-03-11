@@ -51,9 +51,16 @@ const fetchJSON = async (url, tabId) => {
  * @param {string} gameId
  * @param {number} tabId
  * @param {number} timeLimit
+ * @param {number} prefetchSize
  * @returns {Promise<string>|null}
  */
-const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
+const getPGN = async (
+  playerName,
+  gameId,
+  tabId,
+  timeLimit = 3000,
+  prefetchSize = 3
+) => {
   const startTime = +new Date();
   try {
     const archives = (
@@ -64,29 +71,47 @@ const getPGN = async (playerName, gameId, tabId, timeLimit = 3000) => {
     ).archives;
     /*
      * Archives are given from the oldest to the most recet games.
-     * Thus iterating from the last one (the most recent) is usually
-     * better, because players usually want to analyse their most recent
-     * games. You will probably make less fetches
+     * Thus iterating from the last one (the most recent) is usually better,
+     * because players usually want to analyse their most recent games.
+     * Probably, you will find wanted game within last N game archives.
      */
-    for (let i = archives.length - 1; i >= 0; i--) {
-      /* TODO: fetch all archives async to reduce time, waiting for response */
-      const games = (await fetchJSON(archives[i], tabId)).games;
-      for (let j = games.length - 1; j >= 0; j--) {
-        if (extractGameId(games[j].url) === gameId) {
-          return games[j].pgn;
-        }
-      }
-      const currentTime = +new Date();
-      if (currentTime - startTime > timeLimit) {
-        throw new Error("Exceeded time limit!");
-      }
+    const gameArchivesFetchesLastN = archives
+      .slice(-prefetchSize)
+      .map((url) => fetchJSON(url, tabId));
+    const gameArchivesFetchesRest = archives
+      .slice(0, -prefetchSize)
+      .map((url) => fetchJSON(url, tabId));
+
+    /*
+     * Try to find the game within last N game archives.
+     */
+    const gameArchivesLastN = await Promise.all(gameArchivesFetchesLastN);
+    let pgn = findGameInGameArchives(
+      gameArchivesLastN,
+      gameId,
+      startTime,
+      timeLimit
+    );
+    if (pgn) {
+      return pgn;
     }
+
+    /*
+     * Wanted game wasn't within last N game archives.
+     * Search the rest of the game archives.
+     */
+    const gameArchivesRest = await Promise.all(gameArchivesFetchesRest);
+    pgn = findGameInGameArchives(
+      gameArchivesRest,
+      gameId,
+      startTime,
+      timeLimit
+    );
+    return pgn;
   } catch (error) {
     sendLogMessage(error, tabId);
     return null;
   }
-
-  return null;
 };
 
 /**
@@ -112,7 +137,7 @@ const getPGNManual = async (tabId) => {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
-    await waitAndClick(".ui_outside-close-component", tabId);
+    await waitAndClick(".outside-close-component", tabId);
 
     return pgn;
   }
@@ -233,13 +258,37 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
 /**
  * Extract the game ID using the regex for URL.
  * @param {string} url
- * @returns {number|null}
+ * @returns {string|null}
  */
 const extractGameId = (url) => {
   /* Regular expression to match the game ID */
   const regex = /https?:\/\/(?:[^./?#]+\.)*chess\.com\/(?:[^./?#]+\/)*(\d+)/;
   const match = url.match(regex);
   return match ? match[1] : null;
+};
+
+/**
+ * Find game by ID in the game archives.
+ * @param {object} gameArchives
+ * @param {string} gameId
+ * @param {number} startTime
+ * @param {number} timeLimit
+ * @returns {string|null}
+ */
+const findGameInGameArchives = (gameArchives, gameId, startTime, timeLimit) => {
+  for (let i = 0; i < gameArchives.length; i++) {
+    const games = gameArchives[i].games;
+    for (let j = 0; j < games.length; j++) {
+      if (extractGameId(games[j].url) === gameId) {
+        return games[j].pgn;
+      }
+    }
+    const currentTime = +new Date();
+    if (currentTime - startTime > timeLimit) {
+      throw new Error("Exceeded time limit!");
+    }
+  }
+  return null;
 };
 
 /**
@@ -262,7 +311,7 @@ let analysingState = new Set();
 
 /**
  * Get chess.com game and analyse in on lichess.
- * @param {number} tab
+ * @param {object} tab
  */
 const analyseGame = async (tab) => {
   /* After clicking on pageAction twice, second call won't be executed */
@@ -274,15 +323,25 @@ const analyseGame = async (tab) => {
   try {
     await setLoadingState(true, tab.id);
 
-    const [topPlayerName] = await browser.tabs.executeScript(tab.id, {
-      code: `document.querySelector('.user-username-component').textContent;`,
-    });
+    /*
+     * Sometimes it's not possible to get player name (e.g. events).
+     * In such scenarions don't exit, try to analyse the game anyway.
+     * You will have to get PGN manually and won't know which player is black.
+     */
+    let topPlayerName = null;
+    try {
+      [topPlayerName] = await browser.tabs.executeScript(tab.id, {
+        code: `document.querySelector(".player-tagline [data-test-element='user-tagline-username']").textContent;`,
+      });
+    } catch (error) {
+      sendLogMessage(error, tab.id);
+    }
 
     const gameURL = tab.url.split("?")[0];
     const gameId = extractGameId(gameURL);
     let pgn = null;
 
-    if (gameId) {
+    if (gameId && topPlayerName) {
       pgn = await getPGN(topPlayerName, gameId, tab.id);
     }
 
