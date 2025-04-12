@@ -124,20 +124,33 @@ const getPGN = async (
  * @returns {Promise<string>|null}
  */
 const getPGNManual = async (tabId) => {
+  /*
+   * Click share button.
+   */
   await waitAndClick(".share", tabId);
-  await waitAndClick(".board-tab-item-underlined-component", tabId);
 
+  /*
+   * Go to PGN tab.
+   */
+  await waitAndClick("#tab-pgn", tabId);
+
+  /*
+   * Enable PGN timestamps.
+   */
   if (await waitForElement(".share-menu-tab-pgn-toggle", tabId)) {
     await browser.tabs.executeScript(tabId, {
       code: `document.querySelector(".share-menu-tab-pgn-toggle input").checked = true;`,
     });
   }
 
+  /*
+   * Get PGN value.
+   */
   if (await waitForElement("[name='pgn']", tabId)) {
     const [pgn] = await browser.tabs.executeScript(tabId, {
       code: `document.querySelector("[name='pgn']").value;`,
     });
-    await waitAndClick(".outside-close-component", tabId);
+    await waitAndClick(".share-menu-modal-header button", tabId);
 
     return pgn;
   }
