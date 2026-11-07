@@ -128,7 +128,7 @@ const getPGNManual = async (tabId) => {
   /*
    * Click share button.
    */
-  await waitAndClick("[data-cy='sidebar-share-icon']", tabId);
+  await waitAndClick(".game-icons-container-component button", tabId);
 
   /*
    * Go to PGN tab.
