@@ -13,6 +13,13 @@
 
   "permissions": ["https://www.chess.com/*", "https://lichess.org/*", "tabs"],
 
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{0e0d8291-db78-4b15-91cb-7f8b0084cc9a}",
+      "data_collection_permissions": { "required": ["none"] }
+    }
+  },
+
   "background": {
     "scripts": ["src/js/background.js"]
   },
