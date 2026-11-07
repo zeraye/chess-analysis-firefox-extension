@@ -41,5 +41,12 @@
       "https://www.chess.com/analysis/game/computer/*",
       "https://www.chess.com/events/*"
     ]
+  },
+
+  "commands": {
+    "_execute_page_action": {
+      "suggested_key": { "default": "Ctrl + Shift + L" },
+      "description": "Analyse game on lichess"
+    }
   }
 }
