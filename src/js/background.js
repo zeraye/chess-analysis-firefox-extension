@@ -249,23 +249,19 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
     status = (await browser.tabs.get(tabId)).status;
   }
 
-  if (waitForElement("#analyse-toggle-ceval", tabId)) {
-    const [localEval] = await browser.tabs.executeScript(tabId, {
-      code: `document.querySelector("#analyse-toggle-ceval").checked;`,
+  // If the user played as black, flip the board (by opening /black)
+  if (flipToBlack) {
+    browser.tabs.get(tabId).then((tab) => {
+      const newUrl = tab.url + "/black";
+      browser.tabs.update(tab.id, { url: newUrl });
     });
-    if (!localEval) {
-      await waitAndClick("[for='analyse-toggle-ceval']", tabId);
-    }
   }
 
-  // If the user played as black, flip the board (by opening /black)
-  if (!flipToBlack) {
-    return;
+  if (waitForElement("#cmn-tg-analyse-toggle-ceval", tabId)) {
+    await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector("#cmn-tg-analyse-toggle-ceval").checked = true;`,
+    });
   }
-  browser.tabs.get(tabId).then((tab) => {
-    const newUrl = tab.url + "/black";
-    browser.tabs.update(tab.id, { url: newUrl });
-  });
 };
 
 /**
