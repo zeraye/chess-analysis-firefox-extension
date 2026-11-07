@@ -27,7 +27,7 @@ const sendLogMessage = async (message, tabId) => {
  * Wrapper for fetch api with error support.
  * @param {string} url
  * @param {number} tabId
- * @returns {Promise<any>|null}
+ * @returns {Promise<any>}
  */
 const fetchJSON = async (url, tabId) => {
   try {
@@ -37,7 +37,7 @@ const fetchJSON = async (url, tabId) => {
     }
     return response.json();
   } catch (error) {
-    sendLogMessage(error, tabId);
+    sendLogMessage(String(error), tabId);
     return null;
   }
 };
@@ -52,21 +52,22 @@ const fetchJSON = async (url, tabId) => {
  * @param {number} tabId
  * @param {number} timeLimit
  * @param {number} prefetchSize
- * @returns {Promise<string>|null}
+ * @returns {Promise<any>}
  */
 const getPGN = async (
   playerName,
   gameId,
   tabId,
   timeLimit = 3000,
-  prefetchSize = 3
+  prefetchSize = 3,
 ) => {
   const startTime = +new Date();
   try {
+    /** @type {string[]} */
     const archives = (
       await fetchJSON(
         `https://api.chess.com/pub/player/${playerName}/games/archives`,
-        tabId
+        tabId,
       )
     ).archives;
     /*
@@ -90,7 +91,7 @@ const getPGN = async (
       gameArchivesLastN,
       gameId,
       startTime,
-      timeLimit
+      timeLimit,
     );
     if (pgn) {
       return pgn;
@@ -105,11 +106,11 @@ const getPGN = async (
       gameArchivesRest,
       gameId,
       startTime,
-      timeLimit
+      timeLimit,
     );
     return pgn;
   } catch (error) {
-    sendLogMessage(error, tabId);
+    sendLogMessage(String(error), tabId);
     return null;
   }
 };
@@ -121,13 +122,13 @@ const getPGN = async (
  * Try to get gamePGN by opening share element on the page.
  * This should be user after `getPGN()` fails.
  * @param {number} tabId
- * @returns {Promise<string>|null}
+ * @returns {Promise<any>}
  */
 const getPGNManual = async (tabId) => {
   /*
    * Click share button.
    */
-  await waitAndClick("[data-cy='sidebar-share-icon']", tabId);
+  await waitAndClick(".game-icons-container-component button", tabId);
 
   /*
    * Go to PGN tab.
@@ -175,13 +176,13 @@ const clickElement = async (querySelector, tabId) => {
  * @param {number} tabId
  * @param {number} timeLeft
  * @param {number} retryDelay
- * @returns {Promise<boolean>|null}
+ * @returns {Promise<boolean>}
  */
 const waitForElement = async (
   querySelector,
   tabId,
   timeLeft = 5000,
-  retryDelay = 100
+  retryDelay = 100,
 ) => {
   const elementFoundScript = `document.querySelector("${querySelector}") !== null;`;
 
@@ -244,28 +245,33 @@ const lichessAnalyse = async (tabId, pgn, flipToBlack = false) => {
    * Bugfix where status was loading and firefox threw
    * an error about invalid host permissions
    */
+  /** @type {string|undefined} */
   let status = "loading";
   while (status === "loading") {
     status = (await browser.tabs.get(tabId)).status;
   }
 
-  if (waitForElement("#analyse-toggle-ceval", tabId)) {
-    const [localEval] = await browser.tabs.executeScript(tabId, {
-      code: `document.querySelector("#analyse-toggle-ceval").checked;`,
+  /*
+   * If the user played as black, flip the board (by opening /black)
+   */
+  if (flipToBlack) {
+    browser.tabs.get(tabId).then((tab) => {
+      if (!tab.url || !tab.id) {
+        /*
+         * I don't think this should ever happen, but just in case we return early.
+         */
+        return;
+      }
+      const newUrl = tab.url + "/black";
+      browser.tabs.update(tab.id, { url: newUrl });
     });
-    if (!localEval) {
-      await waitAndClick("[for='analyse-toggle-ceval']", tabId);
-    }
   }
 
-  // If the user played as black, flip the board (by opening /black)
-  if (!flipToBlack) {
-    return;
+  if (await waitForElement("#cmn-tg-analyse-toggle-ceval", tabId)) {
+    await browser.tabs.executeScript(tabId, {
+      code: `document.querySelector("#cmn-tg-analyse-toggle-ceval").checked = true;`,
+    });
   }
-  browser.tabs.get(tabId).then((tab) => {
-    const newUrl = tab.url + "/black";
-    browser.tabs.update(tab.id, { url: newUrl });
-  });
 };
 
 /**
@@ -282,7 +288,7 @@ const extractGameId = (url) => {
 
 /**
  * Find game by ID in the game archives.
- * @param {object} gameArchives
+ * @param {{ games: { url: string, pgn: string }[] }[]} gameArchives
  * @param {string} gameId
  * @param {number} startTime
  * @param {number} timeLimit
@@ -318,15 +324,23 @@ const getBlackPlayer = (pgn) => {
 
 /**
  * Set of tabIds that are in analysing state
- * @type {Set<boolean,number>}
+ * @type {Set<number>}
  */
 let analysingState = new Set();
 
 /**
  * Get chess.com game and analyse in on lichess.
- * @param {object} tab
+ * @param {browser.tabs.Tab} tab
  */
 const analyseGame = async (tab) => {
+  if (!tab.id || !tab.url) {
+    sendLogMessage(
+      `Tab ID or URL is missing! Tab ID: ${tab.id}, Tab URL: ${tab.url}`,
+      -1,
+    );
+    return;
+  }
+
   /* After clicking on pageAction twice, second call won't be executed */
   if (analysingState.has(tab.id)) {
     return;
@@ -347,7 +361,7 @@ const analyseGame = async (tab) => {
         code: `document.querySelector(".player-tagline [data-test-element='user-tagline-username']").textContent;`,
       });
     } catch (error) {
-      sendLogMessage(error, tab.id);
+      sendLogMessage(String(error), tab.id);
     }
 
     const gameURL = tab.url.split("?")[0];
@@ -363,7 +377,7 @@ const analyseGame = async (tab) => {
     if (!pgn) {
       sendLogMessage(
         `Game with id ${gameId} not found! Performing manual fetching.`,
-        tab.id
+        tab.id,
       );
       pgn = await getPGNManual(tab.id);
     }
@@ -377,19 +391,23 @@ const analyseGame = async (tab) => {
     let lichessTab = await browser.tabs.create({
       url: "https://lichess.org/paste",
     });
+    if (!lichessTab.id) {
+      sendLogMessage("Failed to create Lichess tab!", tab.id);
+      return;
+    }
     await lichessAnalyse(
       lichessTab.id,
       pgn,
-      getBlackPlayer(pgn) !== topPlayerName
+      getBlackPlayer(pgn) !== topPlayerName,
     );
   } catch (error) {
-    sendLogMessage(error, tab.id);
+    sendLogMessage(String(error), tab.id);
   }
 
   try {
     await setLoadingState(false, tab.id);
   } catch (error) {
-    sendLogMessage(error, tab.id);
+    sendLogMessage(String(error), tab.id);
   } finally {
     analysingState.delete(tab.id);
   }
